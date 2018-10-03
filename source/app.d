@@ -57,7 +57,10 @@ void runKernel(in string connectionFileName) @safe {
         // f.writeln("# of bytes on control: ", controlBytes);
         // f.writeln("Data on control:\n", buf[0 .. controlBytes]);
 
-        auto requestMsg = Message(sockets.shell.recvStrings);
+        const requestStrings = sockets.shell.recvStrings;
+        if(requestStrings is null) continue;
+
+        auto requestMsg = Message(requestStrings);
         f.writeln(requestMsg);
 
         auto busyMsg = statusMessage(requestMsg.header, "busy");

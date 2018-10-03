@@ -68,7 +68,8 @@ string[] recvStrings(ref Socket socket) @safe {
 
     do {
         auto frame = Frame();
-        socket.receive(frame);
+        const ret /*size, bool*/ = socket.tryReceive(frame);
+        if(!ret[1]) return [];
         strings ~= cast(string) frame.data.idup;
     } while(socket.more);
 
