@@ -1,72 +1,56 @@
-int main(string[] args) {
-    try {
-        const connectionFileName = args[1];
-        runKernel(connectionFileName);
-        return 0;
-    } catch(Exception e) {
-        import std.stdio: stderr;
-        stderr.writeln("Error: ", e.msg);
-        import std.stdio: File;
-        auto f = File("/tmp/oops.txt", "w");
-        f.writeln("Error: ", e);
-        return 1;
-    } catch(Error e) {
-        import std.stdio: stderr;
-        stderr.writeln("FATAL ERROR: ", e);
-        import std.stdio: File;
-        auto f = File("/tmp/oops.txt", "w");
-        f.writeln("FATAL ERROR: ", e.msg);
+import jupyter.wire.kernel;
 
-        return 2;
-    }
-}
+mixin Main!();
 
 
-void runKernel(in string connectionFileName) @safe {
-    import jupyter.wire.connection: fileNameToConnectionInfo, Sockets, recvStrings, sendStrings;
-    import jupyter.wire.message: Message, statusMessage;
-    import std.stdio;
+// int main(string[] args) {
+//     try {
+//         const connectionFileName = args[1];
+//         runKernel(connectionFileName);
+//         return 0;
+//     } catch(Exception e) {
+//         import std.stdio: stderr;
+//         stderr.writeln("Error: ", e.msg);
+//         import std.stdio: File;
+//         auto f = File("/tmp/oops.txt", "w");
+//         f.writeln("Error: ", e);
+//         return 1;
+//     } catch(Error e) {
+//         import std.stdio: stderr;
+//         stderr.writeln("FATAL ERROR: ", e);
+//         import std.stdio: File;
+//         auto f = File("/tmp/oops.txt", "w");
+//         f.writeln("FATAL ERROR: ", e.msg);
 
-    const connectionInfo = fileNameToConnectionInfo(connectionFileName);
+//         return 2;
+//     }
+// }
 
-    // import zmqd: Socket, SocketType;
-    // auto shell = Socket(SocketType.router);
-    // f.writeln("connection uri: ", connectionInfo.uri(connectionInfo.shellPort));
-    // shell.bind(connectionInfo.uri(connectionInfo.shellPort));
 
-    auto sockets = Sockets(connectionInfo);
+// void runKernel(in string connectionFileName) @safe {
+//     import jupyter.wire.connection: fileNameToConnectionInfo, Sockets, recvStrings, sendStrings;
+//     import jupyter.wire.message: Message, statusMessage;
+//     import std.stdio;
 
-    ubyte[1024] buf;
+//     const connectionInfo = fileNameToConnectionInfo(connectionFileName);
+//     auto sockets = Sockets(connectionInfo);
 
-    for(;;) {
+//     ubyte[1024] buf;
 
-        auto f = File("/tmp/foo.txt", "a");
-        // const shellBytes = sockets.shell.receive(buf);
-        // f.writeln("# of bytes on shell: ", shellBytes);
-        // f.writeln("Data on shell:\n", buf[0 .. shellBytes]);
+//     for(;;) {
 
-        // import zmqd: Frame;
-        // int i;
-        // do {
-        //     auto frame = Frame();
-        //     sockets.shell.receive(frame);
-        //     () @trusted { f.writeln(i++, " : ", cast(string)frame.data); }();
-        // } while(sockets.shell.more);
+//         auto f = File("/tmp/foo.txt", "a");
 
-        // const controlBytes = sockets.control.receive(buf);
-        // f.writeln("# of bytes on control: ", controlBytes);
-        // f.writeln("Data on control:\n", buf[0 .. controlBytes]);
+//         const requestStrings = sockets.shell.recvStrings;
+//         if(requestStrings is null) continue;
 
-        const requestStrings = sockets.shell.recvStrings;
-        if(requestStrings is null) continue;
+//         auto requestMsg = Message(requestStrings);
+//         f.writeln(requestMsg);
 
-        auto requestMsg = Message(requestStrings);
-        f.writeln(requestMsg);
+//         auto busyMsg = statusMessage(requestMsg.header, "busy");
+//         sockets.ioPub.sendStrings(busyMsg.toStrings(connectionInfo.key));
 
-        auto busyMsg = statusMessage(requestMsg.header, "busy");
-        sockets.ioPub.sendStrings(busyMsg.toStrings(connectionInfo.key));
-
-        auto idleMsg = statusMessage(requestMsg.header, "idle");
-        sockets.ioPub.sendStrings(idleMsg.toStrings(connectionInfo.key));
-    }
-}
+//         auto idleMsg = statusMessage(requestMsg.header, "idle");
+//         sockets.ioPub.sendStrings(idleMsg.toStrings(connectionInfo.key));
+//     }
+// }

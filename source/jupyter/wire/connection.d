@@ -39,16 +39,16 @@ struct ConnectionInfo {
 struct Sockets {
     import zmqd: Socket, SocketType;
 
-    Socket shell, control, stdin, ioPub, hb;
+    Socket shell, control, stdin, ioPub, heartbeat;
 
     this(in ConnectionInfo ci) @safe {
         import zmqd: SocketType;
 
-        initSocket(shell,   SocketType.router, ci, ci.shellPort);
-        initSocket(control, SocketType.router, ci, ci.controlPort);
-        initSocket(stdin,   SocketType.router, ci, ci.stdinPort);
-        initSocket(ioPub,   SocketType.pub, ci, ci.ioPubPort);
-        initSocket(hb,      SocketType.rep, ci, ci.hbPort);
+        initSocket(shell,     SocketType.router, ci, ci.shellPort);
+        initSocket(control,   SocketType.router, ci, ci.controlPort);
+        initSocket(stdin,     SocketType.router, ci, ci.stdinPort);
+        initSocket(ioPub,     SocketType.pub,    ci, ci.ioPubPort);
+        initSocket(heartbeat, SocketType.rep,    ci, ci.hbPort);
     }
 
     private static void initSocket(ref Socket socket, in SocketType socketType, in ConnectionInfo ci, in ushort port) @safe {
