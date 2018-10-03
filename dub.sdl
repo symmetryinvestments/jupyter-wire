@@ -1,0 +1,6 @@
+name "jupyter"
+description "Jupyter kernel written in D"
+authors "Atila Neves"
+copyright "Copyright © 2018, Atila Neves"
+license "boost"
+dependency "zeromq" version="~>4.2.2"

@@ -1,0 +1,14 @@
+.dub
+docs.json
+__dummy.html
+docs/
+jupyter.so
+jupyter.dylib
+jupyter.dll
+jupyter.a
+jupyter.lib
+jupyter-test-*
+*.exe
+*.o
+*.obj
+*.lst
