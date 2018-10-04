@@ -1,6 +1,7 @@
 module jupyter.wire.connection;
 
 
+import jupyter.wire.message: Message;
 import zmqd: Socket;
 
 
@@ -12,17 +13,17 @@ ConnectionInfo fileNameToConnectionInfo(in string fileName) @safe {
 
 struct ConnectionInfo {
 
-    import asdf.serialization : serializationKeys;
+    import asdf.serialization: jkey = serializationKeys;
 
-    @serializationKeys("signature_scheme") string signatureScheme;
-    string transport;
-    @serializationKeys("stdin_port") ushort stdinPort;
-    @serializationKeys("control_port") ushort controlPort;
-    @serializationKeys("iopub_port")ushort ioPubPort;
-    @serializationKeys("hb_port") ushort hbPort;
-    @serializationKeys("shell_port") ushort shellPort;
-    string key;
-    string ip;
+    @jkey("signature_scheme") string signatureScheme;
+                              string transport;
+    @jkey("stdin_port")       ushort stdinPort;
+    @jkey("control_port")     ushort controlPort;
+    @jkey("iopub_port")       ushort ioPubPort;
+    @jkey("hb_port")          ushort hbPort;
+    @jkey("shell_port")       ushort shellPort;
+                              string key;
+                              string ip;
 
     this(in string json) @safe pure {
         import asdf: deserialize;
@@ -76,8 +77,14 @@ string[] recvStrings(ref Socket socket) @safe {
     return strings;
 }
 
+// Send multiple strings at once over ZeroMQ
 void sendStrings(ref Socket socket, in string[] lines) @safe {
     foreach(line; lines[0 .. $-1])
         socket.send(line, true /*more*/);
     socket.send(lines[$-1], false /*more*/);
+}
+
+
+void sendMsg(ref Socket socket, in Message message, in string key) @safe {
+    sendStrings(socket, message.toStrings(key));
 }

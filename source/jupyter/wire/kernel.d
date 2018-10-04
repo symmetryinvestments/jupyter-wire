@@ -68,26 +68,26 @@ bool maybeHandleRequestMessage(in ConnectionInfo connectionInfo, ref Sockets soc
 
 // returns whether or not to shutdown
 bool handleRequestMessage(in ConnectionInfo connectionInfo, ref Sockets sockets, Message requestMessage) @safe {
-    import jupyter.wire.connection: sendStrings;
-    import jupyter.wire.message: statusMessage;
+    import jupyter.wire.connection: sendMsg;
+    import jupyter.wire.message: statusMessage, pubMessage;
 
     static int executionCount;
 
     auto busyMsg = statusMessage(requestMessage.header, "busy");
-    sockets.ioPub.sendStrings(busyMsg.toStrings(connectionInfo.key));
+    sockets.ioPub.sendMsg(busyMsg, connectionInfo.key);
 
     switch(requestMessage.header.msgType) {
-    default: {}
+
+    default:
+        return false;
+
     case "kernel_info_request":
-        auto replyMessage = requestMessage;
-        replyMessage.parentHeader = replyMessage.header;
-        replyMessage.header.msgType = "kernel_info_reply";
-        replyMessage.contentJsonStr = `{"protocol_version": "5.3.0", "implementation": "foo", "implementation_version": "0.0.1", "language_info": {"name": "foo", "version": "0.0.1", "mimetype": "footype", "file_extension": ".d"}}`;
-        replyMessage.updateHeader;
-        sockets.shell.sendStrings(replyMessage.toStrings(connectionInfo.key));
+        auto replyMessage = Message(requestMessage, "kernel_info_reply",
+                                    `{"protocol_version": "5.3.0", "implementation": "foo", "implementation_version": "0.0.1", "language_info": {"name": "foo", "version": "0.0.1", "mimetype": "footype", "file_extension": ".d"}}`);
+        sockets.shell.sendMsg(replyMessage, connectionInfo.key);
 
         auto idleMsg = statusMessage(requestMessage.header, "idle");
-        sockets.ioPub.sendStrings(idleMsg.toStrings(connectionInfo.key));
+        sockets.ioPub.sendMsg(idleMsg, connectionInfo.key);
 
         return false;
 
@@ -96,48 +96,31 @@ bool handleRequestMessage(in ConnectionInfo connectionInfo, ref Sockets sockets,
 
     case "execute_request":
         {
-            auto pubMessage = statusMessage(requestMessage.header, "execute_input");
-            pubMessage.identities = [];
-            pubMessage.header.msgType = "execute_input";
-            pubMessage.contentJsonStr = `{"execution_count": 1, "code": "lecode"}`;
-            pubMessage.updateHeader;
-            sockets.ioPub.sendStrings(pubMessage.toStrings(connectionInfo.key));
+            auto msg = pubMessage(requestMessage.header, "execute_input",
+                                  `{"execution_count": 1, "code": "lecode"}`);
+            sockets.ioPub.sendMsg(msg, connectionInfo.key);
         }
 
         {
-            auto pubMessage = statusMessage(requestMessage.header, "stream");
-            pubMessage.identities = [];
-            pubMessage.header.msgType = "stream";
-            pubMessage.contentJsonStr = `{"name": "stdout", "text": "hello world"}`;
-            pubMessage.updateHeader;
-            sockets.ioPub.sendStrings(pubMessage.toStrings(connectionInfo.key));
+            auto msg = pubMessage(requestMessage.header, "stream",
+                                  `{"name": "stdout", "text": "hello world"}`);
+            sockets.ioPub.sendMsg(msg, connectionInfo.key);
         }
 
         {
-            auto pubMessage = statusMessage(requestMessage.header, "execute_result");
-            pubMessage.identities = [];
-            pubMessage.header.msgType = "stream";
-            pubMessage.contentJsonStr = `{"execution_count": 1, "data": {"text/plain": "result!"}, "metadata": {}}`;
-            pubMessage.updateHeader;
-            sockets.ioPub.sendStrings(pubMessage.toStrings(connectionInfo.key));
+            auto msg = pubMessage(requestMessage.header, "execute_result",
+                                  `{"execution_count": 1, "data": {"text/plain": "result!"}, "metadata": {}}`);
+            sockets.ioPub.sendMsg(msg, connectionInfo.key);
         }
 
         {
-            auto replyMessage = requestMessage;
-            replyMessage.parentHeader = replyMessage.header;
-            replyMessage.header.msgType = "execute_reply";
-            replyMessage.contentJsonStr = `{"status": "ok", "execution_count": 1, "user_variables": {}, "payload": [], "user_expressions": {}}`;
-            sockets.shell.sendStrings(replyMessage.toStrings(connectionInfo.key));
+            auto replyMessage = Message(requestMessage, "execute_reply",
+                                        `{"status": "ok", "execution_count": 1, "user_variables": {}, "payload": [], "user_expressions": {}}`);
+            sockets.shell.sendMsg(replyMessage, connectionInfo.key);
         }
-
-        // {
-        //     auto pubMessage = statusMessage(requestMessage.header, "execute_result");
-        //     pubMessage.contentJsonStr = `{"execution_count": 1, "data": {"text/plain": "lefooislebarislefoo"}, "metadata": {}, "status": "ok"}`;
-        //     sockets.ioPub.sendStrings(pubMessage.toStrings(connectionInfo.key));
-        // }
 
         auto idleMsg = statusMessage(requestMessage.header, "idle");
-        sockets.ioPub.sendStrings(idleMsg.toStrings(connectionInfo.key));
+        sockets.ioPub.sendMsg(idleMsg, connectionInfo.key);
 
         return false;
     }

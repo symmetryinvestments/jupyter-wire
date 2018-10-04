@@ -25,6 +25,7 @@ struct Message {
         const delimiterIndex = strings.countUntil(delimiter);
         identities = strings[0 .. delimiterIndex].dup;
 
+        // TODO: verify signature
         // hmac is delimiter + 1
 
         () @trusted {
@@ -37,24 +38,34 @@ struct Message {
         extraRawData = strings[delimiterIndex + 6 .. $].dup;
     }
 
+    this(in Message other, in string msgType, in string contentJsonStr = `{}`) @safe {
+        identities = other.identities.dup;
+        header = parentHeader = other.header;
+        updateHeader;
+        this.header.msgType = msgType;
+        this.contentJsonStr = contentJsonStr;
+    }
+
+    this(in MessageHeader parentHeader) @safe {
+        this.header = this.parentHeader = parentHeader;
+        updateHeader;
+    }
+
     /**
        Convert to a format suitable for sending over ZMQ
      */
     string[] toStrings(in string key) @safe pure const {
         import asdf: serializeToJson;
 
-        string[] ret;
-
-        ret ~= identities;
-        ret ~= delimiter;
-        ret ~= signature(key);
-        ret ~= header.toJsonString;
-        ret ~= parentHeader.toJsonString;
-        ret ~= metadataJsonStr;
-        ret ~= contentJsonStr;
-        ret ~= extraRawData;
-
-        return ret;
+        return
+            identities.dup ~
+            delimiter ~
+            signature(key) ~
+            header.toJsonString ~
+            parentHeader.toJsonString ~
+            metadataJsonStr ~
+            contentJsonStr ~
+            extraRawData;
     }
 
     /**
@@ -95,14 +106,14 @@ struct Message {
 
 
 struct MessageHeader {
-    import asdf: serializationKeys;
+    import asdf: key = serializationKeys;
 
-    @serializationKeys("msg_id") string msgID;
-    @serializationKeys("msg_type") string msgType;
-    @serializationKeys("username") string userName;
-    string session;
-    string date;
-    @serializationKeys("version") string protocolVersion;
+    @key("msg_id")   string msgID;
+    @key("msg_type") string msgType;
+    @key("username") string userName;
+                     string session;
+                     string date;
+    @key("version")  string protocolVersion;
 }
 
 string toJsonString(MessageHeader header) @trusted pure {
@@ -112,12 +123,16 @@ string toJsonString(MessageHeader header) @trusted pure {
 
 
 Message statusMessage(MessageHeader header, in string status) @safe {
-    Message ret;
-    ret.parentHeader = ret.header = header;
-    ret.identities = ["status"];
-    ret.header.msgType = "status";
+    auto ret = pubMessage(header, "status");
     ret.contentJsonStr = `{"execution_state": "` ~ status ~ `"}`;
-    ret.updateHeader;
+    return ret;
+}
 
+
+Message pubMessage(MessageHeader header, in string type, in string contentJsonStr = `{}`) @safe {
+    auto ret = Message(header);
+    ret.identities = [type];
+    ret.header.msgType = type;
+    ret.contentJsonStr = contentJsonStr;
     return ret;
 }
