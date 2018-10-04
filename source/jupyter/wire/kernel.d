@@ -162,6 +162,7 @@ struct Kernel(Backend) if(isBackend!Backend) {
     void handleExecuteRequest(Message requestMessage)  {
         import jupyter.wire.message: pubMessage;
         import std.json: JSONValue, parseJSON, JSON_TYPE;
+        import std.conv: text;
 
         scope(exit) {
             if(requestMessage.content["store_history"].type == JSON_TYPE.true_)
@@ -176,35 +177,62 @@ struct Kernel(Backend) if(isBackend!Backend) {
             sockets.send(sockets.ioPub, msg);
         }
 
-        const result = backend.execute(requestMessage.content["code"].str);
+        ExecutionResult result;
 
-        {
-            JSONValue content;
-            content["name"] = "stdout";
-            content["text"] = result.stdout;
-            auto msg = pubMessage(requestMessage.header, "stream", content);
-            sockets.send(sockets.ioPub, msg);
-        }
+        try {
 
-        {
-            JSONValue content;
-            content["execution_count"] = executionCount;
-            content["data"] = JSONValue();
-            content["data"]["text/plain"] = result.result;
-            content["metadata"] = parseJSON(`{}`);
-            auto msg = pubMessage(requestMessage.header, "execute_result", content);
-            sockets.send(sockets.ioPub, msg);
-        }
+            result = backend.execute(requestMessage.content["code"].str);
 
-        {
-            JSONValue content;
-            content["status"] = "ok";
-            content["execution_count"] = executionCount;
-            content["user_variables"] = parseJSON(`{}`);
-            content["user_expressions"] = parseJSON(`{}`);
-            content["payload"] = parseJSON(`[]`);
-            auto replyMessage = Message(requestMessage, "execute_reply", content);
-            sockets.send(sockets.shell, replyMessage);
+            {
+                JSONValue content;
+                content["name"] = "stdout";
+                content["text"] = result.stdout;
+                auto msg = pubMessage(requestMessage.header, "stream", content);
+                sockets.send(sockets.ioPub, msg);
+            }
+
+            {
+                JSONValue content;
+                content["execution_count"] = executionCount;
+                content["data"] = JSONValue();
+                content["data"]["text/plain"] = result.result;
+                content["metadata"] = parseJSON(`{}`);
+                auto msg = pubMessage(requestMessage.header, "execute_result", content);
+                sockets.send(sockets.ioPub, msg);
+            }
+
+            {
+                JSONValue content;
+                content["status"] = "ok";
+                content["execution_count"] = executionCount;
+                content["user_variables"] = parseJSON(`{}`);
+                content["user_expressions"] = parseJSON(`{}`);
+                content["payload"] = parseJSON(`[]`);
+                auto replyMessage = Message(requestMessage, "execute_reply", content);
+                sockets.send(sockets.shell, replyMessage);
+            }
+
+        } catch(Exception e) {
+
+            {
+                JSONValue content;
+                content["name"] = "stdout";
+                content["text"] = text("Error: ", e.msg);
+                auto msg = pubMessage(requestMessage.header, "stream", content);
+                sockets.send(sockets.ioPub, msg);
+            }
+
+            {
+                JSONValue content;
+                content["status"] = "error";
+                content["execution_count"] = executionCount;
+                content["ename"] = "Exception";
+                content["evalue"] = e.msg;
+                content["traceback"] = text(e);
+
+                auto replyMessage = Message(requestMessage, "execute_reply", content);
+                sockets.send(sockets.shell, replyMessage);
+            }
         }
     }
 }

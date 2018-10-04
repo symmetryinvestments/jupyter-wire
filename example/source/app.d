@@ -4,6 +4,11 @@ import jupyter.wire.kernel;
 mixin Main!ExampleBackend;
 
 
+class ExampleException: Exception {
+    import std.exception: basicExceptionCtors;
+    mixin basicExceptionCtors;
+}
+
 struct ExampleBackend {
 
     enum languageInfo = LanguageInfo("foo", "0.0.1", ".foo");
@@ -14,8 +19,8 @@ struct ExampleBackend {
 
         switch(code) {
         default:
-            return ExecutionResult("Unknown command '" ~ code ~ "'",
-                                   "Oops");
+            throw new ExampleException("Unkown command '" ~ code ~ "'");
+
         case "99":
             return ExecutionResult("99 bottles of beer on the wall");
 
