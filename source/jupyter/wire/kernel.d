@@ -6,6 +6,7 @@ import jupyter.wire.connection: ConnectionInfo, Sockets;
 import zmqd: Socket;
 import std.typecons: Nullable;
 
+
 /**
    So users don't have to write their own main
  */
@@ -65,11 +66,12 @@ bool maybeHandleRequestMessage(in ConnectionInfo connectionInfo, ref Sockets soc
     return handleRequestMessage(connectionInfo, sockets, requestMessage.get);
 }
 
+// returns whether or not to shutdown
 bool handleRequestMessage(in ConnectionInfo connectionInfo, ref Sockets sockets, Message requestMessage) @safe {
     import jupyter.wire.connection: sendStrings;
     import jupyter.wire.message: statusMessage;
 
-    int executionCount;
+    static int executionCount;
 
     auto busyMsg = statusMessage(requestMessage.header, "busy");
     sockets.ioPub.sendStrings(busyMsg.toStrings(connectionInfo.key));
@@ -93,15 +95,46 @@ bool handleRequestMessage(in ConnectionInfo connectionInfo, ref Sockets sockets,
         return true;
 
     case "execute_request":
-        auto replyMessage = requestMessage;
-        replyMessage.parentHeader = replyMessage.header;
-        replyMessage.header.msgType = "execute_reply";
-        replyMessage.contentJsonStr = `{"execution_count": 1, "status": "ok"}`;
-        sockets.shell.sendStrings(replyMessage.toStrings(connectionInfo.key));
+        {
+            auto pubMessage = statusMessage(requestMessage.header, "execute_input");
+            pubMessage.identities = [];
+            pubMessage.header.msgType = "execute_input";
+            pubMessage.contentJsonStr = `{"execution_count": 1, "code": "lecode"}`;
+            pubMessage.updateHeader;
+            sockets.ioPub.sendStrings(pubMessage.toStrings(connectionInfo.key));
+        }
 
-        auto pubMessage = statusMessage(requestMessage.header, "execute_result");
-        pubMessage.contentJsonStr = `{"execution_count": 1, "data": {"text/plain": "lefooislebarislefoo"}, "metadata": {}, "status": "ok"}`;
-        sockets.ioPub.sendStrings(pubMessage.toStrings(connectionInfo.key));
+        {
+            auto pubMessage = statusMessage(requestMessage.header, "stream");
+            pubMessage.identities = [];
+            pubMessage.header.msgType = "stream";
+            pubMessage.contentJsonStr = `{"name": "stdout", "text": "hello world"}`;
+            pubMessage.updateHeader;
+            sockets.ioPub.sendStrings(pubMessage.toStrings(connectionInfo.key));
+        }
+
+        {
+            auto pubMessage = statusMessage(requestMessage.header, "execute_result");
+            pubMessage.identities = [];
+            pubMessage.header.msgType = "stream";
+            pubMessage.contentJsonStr = `{"execution_count": 1, "data": {"text/plain": "result!"}, "metadata": {}}`;
+            pubMessage.updateHeader;
+            sockets.ioPub.sendStrings(pubMessage.toStrings(connectionInfo.key));
+        }
+
+        {
+            auto replyMessage = requestMessage;
+            replyMessage.parentHeader = replyMessage.header;
+            replyMessage.header.msgType = "execute_reply";
+            replyMessage.contentJsonStr = `{"status": "ok", "execution_count": 1, "user_variables": {}, "payload": [], "user_expressions": {}}`;
+            sockets.shell.sendStrings(replyMessage.toStrings(connectionInfo.key));
+        }
+
+        // {
+        //     auto pubMessage = statusMessage(requestMessage.header, "execute_result");
+        //     pubMessage.contentJsonStr = `{"execution_count": 1, "data": {"text/plain": "lefooislebarislefoo"}, "metadata": {}, "status": "ok"}`;
+        //     sockets.ioPub.sendStrings(pubMessage.toStrings(connectionInfo.key));
+        // }
 
         auto idleMsg = statusMessage(requestMessage.header, "idle");
         sockets.ioPub.sendStrings(idleMsg.toStrings(connectionInfo.key));
@@ -109,7 +142,6 @@ bool handleRequestMessage(in ConnectionInfo connectionInfo, ref Sockets sockets,
         return false;
     }
 
-    //return false /*shutdown*/;
     assert(0);
 }
 

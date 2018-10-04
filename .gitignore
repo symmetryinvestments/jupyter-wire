@@ -12,3 +12,4 @@ jupyter-test-*
 *.o
 *.obj
 *.lst
+.ipynb_checkpoints

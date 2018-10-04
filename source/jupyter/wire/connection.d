@@ -77,5 +77,7 @@ string[] recvStrings(ref Socket socket) @safe {
 }
 
 void sendStrings(ref Socket socket, in string[] lines) @safe {
-    foreach(line; lines) socket.send(line, true /*more*/);
+    foreach(line; lines[0 .. $-1])
+        socket.send(line, true /*more*/);
+    socket.send(lines[$-1], false /*more*/);
 }
