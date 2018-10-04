@@ -10,8 +10,8 @@ mixin template Main(Backend) {
             import jupyter.wire.kernel: Kernel;
             const connectionFileName = args[1];
             auto backend = Backend();
-            auto kernel = Kernel!Backend(backend, connectionFileName);
-            kernel.run;
+            auto k = kernel(backend, connectionFileName);
+            k.run;
             return 0;
         } catch(Exception e) {
             import std.stdio: stderr;
@@ -23,7 +23,6 @@ mixin template Main(Backend) {
             return 2;
         }
     }
-
 }
 
 
@@ -33,10 +32,12 @@ struct LanguageInfo {
     string fileExtension;
 }
 
+
 struct ExecutionResult {
     string result;
     string stdout;
 }
+
 
 template isBackend(T) {
     enum isBackend = is(typeof({
@@ -44,6 +45,12 @@ template isBackend(T) {
         ExecutionResult result = T.init.execute("foo");
     }));
 }
+
+
+auto kernel(Backend, Args...)(Backend backend, auto ref Args args) {
+    return Kernel!Backend(backend, args);
+}
+
 
 /**
    Implements a generic Jupyter kernel.
