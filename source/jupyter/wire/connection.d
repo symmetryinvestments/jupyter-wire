@@ -62,7 +62,7 @@ struct Sockets {
         socket.bind(ci.uri(port));
     }
 
-    void send(ref Socket socket, in Message message) @safe {
+    void send(ref Socket socket, Message message) @safe {
         sendStrings(socket, message.toStrings(connectionInfo.key));
     }
 }

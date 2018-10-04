@@ -1,15 +1,19 @@
 module jupyter.wire.message;
 
+import asdf: Asdf;
+
 /**
    A message sent to the kernel.
    See https://jupyter-client.readthedocs.io/en/stable/messaging.html#wire-protocol
  */
 struct Message {
+    import asdf: Asdf;
+
     string[] identities;
     MessageHeader header;
     MessageHeader parentHeader;
-    string metadataJsonStr = "{}";
-    string contentJsonStr = "{}";
+    Asdf metadata;
+    Asdf content;
     string[] extraRawData;
 
     enum delimiter = "<IDS|MSG>";
@@ -19,7 +23,7 @@ struct Message {
        sockets.
      */
     this(in string[] strings) @safe pure {
-        import asdf: deserialize;
+        import asdf: deserialize, parseJson;
         import std.algorithm: countUntil;
 
         const delimiterIndex = strings.countUntil(delimiter);
@@ -33,29 +37,38 @@ struct Message {
             parentHeader = strings[delimiterIndex + 3].deserialize!MessageHeader;
         }();
 
-        metadataJsonStr = strings[delimiterIndex + 4];
-        contentJsonStr = strings[delimiterIndex + 5];
+        metadata = () @trusted { return parseJson(strings[delimiterIndex + 4]); }();
+        content = () @trusted { return parseJson(strings[delimiterIndex + 5]); }();
         extraRawData = strings[delimiterIndex + 6 .. $].dup;
     }
 
     this(in Message other, in string msgType, in string contentJsonStr = `{}`) @safe {
-        identities = other.identities.dup;
-        header = parentHeader = other.header;
-        updateHeader;
-        this.header.msgType = msgType;
-        this.contentJsonStr = contentJsonStr;
+        import asdf: parseJson;
+        this(other, msgType, () @trusted { return parseJson(contentJsonStr); }());
     }
 
-    this(in MessageHeader parentHeader) @safe {
+    this(in Message other, in string msgType, Asdf content) @safe {
+        identities = other.identities.dup;
+        this(other.header, msgType, content);
+    }
+
+    this(in MessageHeader parentHeader, in string msgType) @safe {
+        import asdf: parseJson;
+        this(parentHeader, msgType, () @trusted { return parseJson(`{}`); }());
+    }
+
+    this(in MessageHeader parentHeader, in string msgType, Asdf content) @safe {
         this.header = this.parentHeader = parentHeader;
+        this.header.msgType = msgType;
         updateHeader;
+        this.content = content;
     }
 
     /**
        Convert to a format suitable for sending over ZMQ
      */
-    string[] toStrings(in string key) @safe pure const {
-        import asdf: serializeToJson;
+    string[] toStrings(in string key) /*@safe*/ @trusted /*pure*/ {
+        import asdf: serializeToJson, parseJson;
 
         return
             identities.dup ~
@@ -63,8 +76,8 @@ struct Message {
             signature(key) ~
             header.toJsonString ~
             parentHeader.toJsonString ~
-            metadataJsonStr ~
-            contentJsonStr ~
+            toJsonString(metadata) ~
+            toJsonString(content) ~
             extraRawData;
     }
 
@@ -79,7 +92,7 @@ struct Message {
         header.msgID = randomUUID.toString;
     }
 
-    private string signature(in string key) @safe pure const {
+    private string signature(in string key) @safe pure {
         import std.digest.hmac: hmac;
         import std.digest.sha: SHA256;
         import std.string: representation;
@@ -87,7 +100,8 @@ struct Message {
         import std.conv : toChars;
 
         auto mac = hmac!SHA256(key.representation);
-        foreach(w; [header.toJsonString, parentHeader.toJsonString, metadataJsonStr, contentJsonStr])
+
+        foreach(w; [header.toJsonString, parentHeader.toJsonString, toJsonString(metadata), toJsonString(content)])
             mac.put(w.representation);
 
         ubyte[32] us = mac.finish;
@@ -102,6 +116,11 @@ struct Message {
         return cs.data;
     }
 
+
+    private static string toJsonString(ref Asdf asdf) @trusted pure {
+        import std.conv: to;
+        return asdf == Asdf.init ? `{}` : asdf.to!string;
+    }
 }
 
 
@@ -116,23 +135,28 @@ struct MessageHeader {
     @key("version")  string protocolVersion;
 }
 
-string toJsonString(MessageHeader header) @trusted pure {
+// can't be made a member function because `serializetoJson(this)` doesn't compile
+private string toJsonString(MessageHeader header) @trusted pure {
     import asdf: serializeToJson;
     return header.msgID is null ? "{}" : serializeToJson(header);
 }
 
 
-Message statusMessage(MessageHeader header, in string status) @safe {
-    auto ret = pubMessage(header, "status");
-    ret.contentJsonStr = `{"execution_state": "` ~ status ~ `"}`;
+Message statusMessage(MessageHeader header, in string status) @trusted {
+    auto ret = pubMessage(header, "status", `{"execution_state": "` ~ status ~ `"}`);
     return ret;
 }
 
 
-Message pubMessage(MessageHeader header, in string type, in string contentJsonStr = `{}`) @safe {
-    auto ret = Message(header);
-    ret.identities = [type];
-    ret.header.msgType = type;
-    ret.contentJsonStr = contentJsonStr;
+Message pubMessage(MessageHeader header, in string msgType, in string contentJsonStr = `{}`) @safe {
+    import asdf: parseJson;
+    auto content = () @trusted { return parseJson(contentJsonStr); }();
+    return pubMessage(header, msgType, content);
+}
+
+
+Message pubMessage(MessageHeader header, in string msgType, Asdf content) @safe {
+    auto ret = Message(header, msgType, content);
+    ret.identities = [msgType];
     return ret;
 }

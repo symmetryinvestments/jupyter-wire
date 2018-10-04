@@ -58,9 +58,10 @@ bool maybeHandleRequestMessage(ref Sockets sockets, Nullable!Message requestMess
 
 // returns whether or not to shutdown
 bool handleRequestMessage(ref Sockets sockets, Message requestMessage) @safe {
+
     import jupyter.wire.message: statusMessage, pubMessage;
 
-    static int executionCount;
+    static int executionCount; // TODO
 
     auto busyMsg = statusMessage(requestMessage.header, "busy");
     sockets.send(sockets.ioPub, busyMsg);
@@ -72,8 +73,9 @@ bool handleRequestMessage(ref Sockets sockets, Message requestMessage) @safe {
 
     case "shutdown_request":
         // TODO: restart
-        auto replyMessage = Message(requestMessage, "shutdown_reply",
-                                    `{"restart": false}`);
+        // The content of the request is just {"restart": bool} so we reuse it
+        // for the reply.
+        auto replyMessage = Message(requestMessage, "shutdown_reply", requestMessage.content);
         sockets.send(sockets.control, replyMessage);
         return true;
 
