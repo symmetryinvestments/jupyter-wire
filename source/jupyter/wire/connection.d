@@ -39,7 +39,9 @@ struct ConnectionInfo {
 
 
 struct Sockets {
+    import jupyter.wire.message: MessageHeader;
     import zmqd: Socket, SocketType;
+    import std.json: JSONValue;
 
     ConnectionInfo connectionInfo;
     Socket shell, control, stdin, ioPub, heartbeat;
@@ -64,6 +66,18 @@ struct Sockets {
 
     void send(ref Socket socket, Message message) @safe {
         sendStrings(socket, message.toStrings(connectionInfo.key));
+    }
+
+    void publish(in MessageHeader parentHeader, in string msgType, JSONValue content) @safe {
+        import jupyter.wire.message: pubMessage;
+        send(ioPub, pubMessage(parentHeader, msgType, content));
+    }
+
+    void stdout(in MessageHeader parentHeader, in string stdout) @safe {
+        JSONValue content;
+        content["name"] = "stdout";
+        content["text"] = stdout;
+        publish(parentHeader, "stream", content);
     }
 }
 

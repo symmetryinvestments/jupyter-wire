@@ -182,14 +182,7 @@ struct Kernel(Backend) if(isBackend!Backend) {
         try {
 
             result = backend.execute(requestMessage.content["code"].str);
-
-            {
-                JSONValue content;
-                content["name"] = "stdout";
-                content["text"] = result.stdout;
-                auto msg = pubMessage(requestMessage.header, "stream", content);
-                sockets.send(sockets.ioPub, msg);
-            }
+            sockets.stdout(requestMessage.header, result.stdout);
 
             {
                 JSONValue content;
@@ -197,8 +190,7 @@ struct Kernel(Backend) if(isBackend!Backend) {
                 content["data"] = JSONValue();
                 content["data"]["text/plain"] = result.result;
                 content["metadata"] = parseJSON(`{}`);
-                auto msg = pubMessage(requestMessage.header, "execute_result", content);
-                sockets.send(sockets.ioPub, msg);
+                sockets.publish(requestMessage.header, "execute_result", content);
             }
 
             {
@@ -214,13 +206,7 @@ struct Kernel(Backend) if(isBackend!Backend) {
 
         } catch(Exception e) {
 
-            {
-                JSONValue content;
-                content["name"] = "stdout";
-                content["text"] = text("Error: ", e.msg);
-                auto msg = pubMessage(requestMessage.header, "stream", content);
-                sockets.send(sockets.ioPub, msg);
-            }
+            sockets.stdout(requestMessage.header, text("Error: ", e.msg));
 
             {
                 JSONValue content;
