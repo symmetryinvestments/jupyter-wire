@@ -67,10 +67,14 @@ bool handleRequestMessage(ref Sockets sockets, Message requestMessage) @safe {
     auto busyMsg = statusMessage(requestMessage.header, "busy");
     sockets.send(sockets.ioPub, busyMsg);
 
+    scope(exit) {
+        auto idleMsg = statusMessage(requestMessage.header, "idle");
+        sockets.send(sockets.ioPub, idleMsg);
+    }
+
     switch(requestMessage.header.msgType) {
 
-    default:
-        return false;
+    default: return false;
 
     case "shutdown_request":
         // TODO: restart
@@ -82,22 +86,17 @@ bool handleRequestMessage(ref Sockets sockets, Message requestMessage) @safe {
 
     case "kernel_info_request":
         JSONValue kernelInfo;
-        () @trusted {
-            kernelInfo["protocol_version"] = "5.3.0";
-            kernelInfo["implementation"] = "foo";
-            kernelInfo["implementation_version"] = "0.0.1";
-            kernelInfo["language_info"] = JSONValue();
-            kernelInfo["language_info"]["name"] = "foo";
-            kernelInfo["language_info"]["version"] = "0.0.1";
-            kernelInfo["language_info"]["file_extension"] = ".d";
-            kernelInfo["language_info"]["mimetype"] = "";
-        }();
+        kernelInfo["protocol_version"] = "5.3.0";
+        kernelInfo["implementation"] = "foo";
+        kernelInfo["implementation_version"] = "0.0.1";
+        kernelInfo["language_info"] = JSONValue();
+        kernelInfo["language_info"]["name"] = "foo";
+        kernelInfo["language_info"]["version"] = "0.0.1";
+        kernelInfo["language_info"]["file_extension"] = ".d";
+        kernelInfo["language_info"]["mimetype"] = "";
 
         auto replyMessage = Message(requestMessage, "kernel_info_reply", kernelInfo);
         sockets.send(sockets.shell, replyMessage);
-
-        auto idleMsg = statusMessage(requestMessage.header, "idle");
-        sockets.send(sockets.ioPub, idleMsg);
 
         return false;
 
@@ -140,9 +139,6 @@ bool handleRequestMessage(ref Sockets sockets, Message requestMessage) @safe {
             auto replyMessage = Message(requestMessage, "execute_reply", content);
             sockets.send(sockets.shell, replyMessage);
         }
-
-        auto idleMsg = statusMessage(requestMessage.header, "idle");
-        sockets.send(sockets.ioPub, idleMsg);
 
         return false;
     }
