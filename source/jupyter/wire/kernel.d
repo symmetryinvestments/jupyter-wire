@@ -148,9 +148,12 @@ struct Kernel {
 
     void handleExecuteRequest(Message requestMessage) @safe {
         import jupyter.wire.message: pubMessage;
-        import std.json: JSONValue, parseJSON;
+        import std.json: JSONValue, parseJSON, JSON_TYPE;
 
-        scope(exit) ++executionCount;
+        scope(exit) {
+            if(requestMessage.content["store_history"].type == JSON_TYPE.true_)
+            ++executionCount;
+        }
 
         {
             JSONValue content;
@@ -160,10 +163,12 @@ struct Kernel {
             sockets.send(sockets.ioPub, msg);
         }
 
+        const result = execute(requestMessage.content["code"].str);
+
         {
             JSONValue content;
             content["name"] = "stdout";
-            content["text"] = "this is the json stdout";
+            content["text"] = result.stdout;
             auto msg = pubMessage(requestMessage.header, "stream", content);
             sockets.send(sockets.ioPub, msg);
         }
@@ -172,7 +177,7 @@ struct Kernel {
             JSONValue content;
             content["execution_count"] = executionCount;
             content["data"] = JSONValue();
-            content["data"]["text/plain"] = "this is the json result";
+            content["data"]["text/plain"] = result.result;
             content["metadata"] = parseJSON(`{}`);
             auto msg = pubMessage(requestMessage.header, "execute_result", content);
             sockets.send(sockets.ioPub, msg);
@@ -189,4 +194,15 @@ struct Kernel {
             sockets.send(sockets.shell, replyMessage);
         }
     }
+}
+
+
+struct ExecutionResult {
+    string result;
+    string stdout;
+}
+
+ExecutionResult execute(in string code) @safe {
+    return ExecutionResult("this is the new result for '" ~ code ~ "'",
+                           "and this is the new stdout for '" ~ code ~ "'");
 }
