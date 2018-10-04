@@ -40,10 +40,13 @@ struct ConnectionInfo {
 struct Sockets {
     import zmqd: Socket, SocketType;
 
+    ConnectionInfo connectionInfo;
     Socket shell, control, stdin, ioPub, heartbeat;
 
-    this(in ConnectionInfo ci) @safe {
+    this(ConnectionInfo ci) @safe {
         import zmqd: SocketType;
+
+        this.connectionInfo = ci;
 
         initSocket(shell,     SocketType.router, ci, ci.shellPort);
         initSocket(control,   SocketType.router, ci, ci.controlPort);
@@ -56,6 +59,10 @@ struct Sockets {
         import zmqd: Socket;
         socket = Socket(socketType);
         socket.bind(ci.uri(port));
+    }
+
+    string key() @safe pure nothrow const {
+        return connectionInfo.key;
     }
 }
 

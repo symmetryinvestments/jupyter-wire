@@ -43,8 +43,8 @@ void run(in string connectionFileName) @safe {
 
     for(bool stop; !stop;) {
         maybeHandleHeartbeat(sockets);
-        const shellShutdown = maybeHandleRequestMessage(connectionInfo, sockets, sockets.shell.recvRequestMessage);
-        const controlShutdown = maybeHandleRequestMessage(connectionInfo, sockets, sockets.control.recvRequestMessage);
+        const shellShutdown = maybeHandleRequestMessage(sockets, sockets.shell.recvRequestMessage);
+        const controlShutdown = maybeHandleRequestMessage(sockets, sockets.control.recvRequestMessage);
         stop = shellShutdown || controlShutdown;
         () @trusted { Thread.sleep(10.msecs); }();
     }
@@ -61,20 +61,20 @@ Nullable!Message recvRequestMessage(ref Socket socket) @safe {
     return nullable(Message(requestStrings));
 }
 
-bool maybeHandleRequestMessage(in ConnectionInfo connectionInfo, ref Sockets sockets, Nullable!Message requestMessage) @safe {
+bool maybeHandleRequestMessage(ref Sockets sockets, Nullable!Message requestMessage) @safe {
     if(requestMessage.isNull) return false;
-    return handleRequestMessage(connectionInfo, sockets, requestMessage.get);
+    return handleRequestMessage(sockets, requestMessage.get);
 }
 
 // returns whether or not to shutdown
-bool handleRequestMessage(in ConnectionInfo connectionInfo, ref Sockets sockets, Message requestMessage) @safe {
+bool handleRequestMessage(ref Sockets sockets, Message requestMessage) @safe {
     import jupyter.wire.connection: sendMsg;
     import jupyter.wire.message: statusMessage, pubMessage;
 
     static int executionCount;
 
     auto busyMsg = statusMessage(requestMessage.header, "busy");
-    sockets.ioPub.sendMsg(busyMsg, connectionInfo.key);
+    sockets.ioPub.sendMsg(busyMsg, sockets.key);
 
     switch(requestMessage.header.msgType) {
 
@@ -84,10 +84,10 @@ bool handleRequestMessage(in ConnectionInfo connectionInfo, ref Sockets sockets,
     case "kernel_info_request":
         auto replyMessage = Message(requestMessage, "kernel_info_reply",
                                     `{"protocol_version": "5.3.0", "implementation": "foo", "implementation_version": "0.0.1", "language_info": {"name": "foo", "version": "0.0.1", "mimetype": "footype", "file_extension": ".d"}}`);
-        sockets.shell.sendMsg(replyMessage, connectionInfo.key);
+        sockets.shell.sendMsg(replyMessage, sockets.key);
 
         auto idleMsg = statusMessage(requestMessage.header, "idle");
-        sockets.ioPub.sendMsg(idleMsg, connectionInfo.key);
+        sockets.ioPub.sendMsg(idleMsg, sockets.key);
 
         return false;
 
@@ -98,29 +98,29 @@ bool handleRequestMessage(in ConnectionInfo connectionInfo, ref Sockets sockets,
         {
             auto msg = pubMessage(requestMessage.header, "execute_input",
                                   `{"execution_count": 1, "code": "lecode"}`);
-            sockets.ioPub.sendMsg(msg, connectionInfo.key);
+            sockets.ioPub.sendMsg(msg, sockets.key);
         }
 
         {
             auto msg = pubMessage(requestMessage.header, "stream",
                                   `{"name": "stdout", "text": "hello world"}`);
-            sockets.ioPub.sendMsg(msg, connectionInfo.key);
+            sockets.ioPub.sendMsg(msg, sockets.key);
         }
 
         {
             auto msg = pubMessage(requestMessage.header, "execute_result",
                                   `{"execution_count": 1, "data": {"text/plain": "result!"}, "metadata": {}}`);
-            sockets.ioPub.sendMsg(msg, connectionInfo.key);
+            sockets.ioPub.sendMsg(msg, sockets.key);
         }
 
         {
             auto replyMessage = Message(requestMessage, "execute_reply",
                                         `{"status": "ok", "execution_count": 1, "user_variables": {}, "payload": [], "user_expressions": {}}`);
-            sockets.shell.sendMsg(replyMessage, connectionInfo.key);
+            sockets.shell.sendMsg(replyMessage, sockets.key);
         }
 
         auto idleMsg = statusMessage(requestMessage.header, "idle");
-        sockets.ioPub.sendMsg(idleMsg, connectionInfo.key);
+        sockets.ioPub.sendMsg(idleMsg, sockets.key);
 
         return false;
     }
