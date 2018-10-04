@@ -212,7 +212,7 @@ struct Kernel(Backend) if(isBackend!Backend) {
                 JSONValue content;
                 content["status"] = "error";
                 content["execution_count"] = executionCount;
-                content["ename"] = "Exception";
+                content["ename"] = typeid(e).name;
                 content["evalue"] = e.msg;
                 content["traceback"] = text(e);
 
