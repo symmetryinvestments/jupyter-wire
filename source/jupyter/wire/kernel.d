@@ -60,8 +60,9 @@ bool maybeHandleRequestMessage(ref Sockets sockets, Nullable!Message requestMess
 bool handleRequestMessage(ref Sockets sockets, Message requestMessage) @safe {
 
     import jupyter.wire.message: statusMessage, pubMessage;
+    import std.json : JSONValue, parseJSON;
 
-    static int executionCount; // TODO
+    static int executionCount = 1;
 
     auto busyMsg = statusMessage(requestMessage.header, "busy");
     sockets.send(sockets.ioPub, busyMsg);
@@ -80,8 +81,19 @@ bool handleRequestMessage(ref Sockets sockets, Message requestMessage) @safe {
         return true;
 
     case "kernel_info_request":
-        auto replyMessage = Message(requestMessage, "kernel_info_reply",
-                                    `{"protocol_version": "5.3.0", "implementation": "foo", "implementation_version": "0.0.1", "language_info": {"name": "foo", "version": "0.0.1", "mimetype": "footype", "file_extension": ".d"}}`);
+        JSONValue kernelInfo;
+        () @trusted {
+            kernelInfo["protocol_version"] = "5.3.0";
+            kernelInfo["implementation"] = "foo";
+            kernelInfo["implementation_version"] = "0.0.1";
+            kernelInfo["language_info"] = JSONValue();
+            kernelInfo["language_info"]["name"] = "foo";
+            kernelInfo["language_info"]["version"] = "0.0.1";
+            kernelInfo["language_info"]["file_extension"] = ".d";
+            kernelInfo["language_info"]["mimetype"] = "";
+        }();
+
+        auto replyMessage = Message(requestMessage, "kernel_info_reply", kernelInfo);
         sockets.send(sockets.shell, replyMessage);
 
         auto idleMsg = statusMessage(requestMessage.header, "idle");
@@ -90,27 +102,42 @@ bool handleRequestMessage(ref Sockets sockets, Message requestMessage) @safe {
         return false;
 
     case "execute_request":
+        scope(exit) ++executionCount;
+
         {
-            auto msg = pubMessage(requestMessage.header, "execute_input",
-                                  `{"execution_count": 1, "code": "lecode"}`);
+            JSONValue content;
+            content["execution_count"] = executionCount;
+            content["code"] = requestMessage.content["code"];
+            auto msg = pubMessage(requestMessage.header, "execute_input", content);
             sockets.send(sockets.ioPub, msg);
         }
 
         {
-            auto msg = pubMessage(requestMessage.header, "stream",
-                                  `{"name": "stdout", "text": "this is stdout"}`);
+            JSONValue content;
+            content["name"] = "stdout";
+            content["text"] = "this is the json stdout";
+            auto msg = pubMessage(requestMessage.header, "stream", content);
             sockets.send(sockets.ioPub, msg);
         }
 
         {
-            auto msg = pubMessage(requestMessage.header, "execute_result",
-                                  `{"execution_count": 1, "data": {"text/plain": "this is the result"}, "metadata": {}}`);
+            JSONValue content;
+            content["execution_count"] = executionCount;
+            content["data"] = JSONValue();
+            content["data"]["text/plain"] = "this is the json result";
+            content["metadata"] = parseJSON(`{}`);
+            auto msg = pubMessage(requestMessage.header, "execute_result", content);
             sockets.send(sockets.ioPub, msg);
         }
 
         {
-            auto replyMessage = Message(requestMessage, "execute_reply",
-                                        `{"status": "ok", "execution_count": 1, "user_variables": {}, "payload": [], "user_expressions": {}}`);
+            JSONValue content;
+            content["status"] = "ok";
+            content["execution_count"] = executionCount;
+            content["user_variables"] = parseJSON(`{}`);
+            content["user_expressions"] = parseJSON(`{}`);
+            content["payload"] = parseJSON(`[]`);
+            auto replyMessage = Message(requestMessage, "execute_reply", content);
             sockets.send(sockets.shell, replyMessage);
         }
 
