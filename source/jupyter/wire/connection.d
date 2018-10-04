@@ -3,6 +3,7 @@ module jupyter.wire.connection;
 
 import jupyter.wire.message: Message;
 import zmqd: Socket;
+import std.typecons: Nullable;
 
 
 ConnectionInfo fileNameToConnectionInfo(in string fileName) @safe {
@@ -61,15 +62,30 @@ struct Sockets {
         socket.bind(ci.uri(port));
     }
 
-    string key() @safe pure nothrow const {
-        return connectionInfo.key;
+    void send(ref Socket socket, in Message message) @safe {
+        sendStrings(socket, message.toStrings(connectionInfo.key));
     }
 }
 
 
+/**
+   Receive a message on the given zeromq socket without blocking.
+   If there are no messages to be received, returns a null message.
+ */
+Nullable!Message recvRequestMessage(ref Socket socket) @safe {
+    import jupyter.wire.connection: recvStrings;
+    import jupyter.wire.message: Message;
+    import std.typecons: Nullable, nullable;
+
+    const requestStrings = socket.recvStrings;
+    if(requestStrings is null) return Nullable!Message();
+
+    return nullable(Message(requestStrings));
+}
+
 // The shell and control sockets receive 6 or more strings at time
 // See https://jupyter-client.readthedocs.io/en/stable/messaging.html#wire-protocol
-string[] recvStrings(ref Socket socket) @safe {
+private string[] recvStrings(ref Socket socket) @safe {
     import zmqd: Frame;
 
     string[] strings;
@@ -85,13 +101,8 @@ string[] recvStrings(ref Socket socket) @safe {
 }
 
 // Send multiple strings at once over ZeroMQ
-void sendStrings(ref Socket socket, in string[] lines) @safe {
+private void sendStrings(ref Socket socket, in string[] lines) @safe {
     foreach(line; lines[0 .. $-1])
         socket.send(line, true /*more*/);
     socket.send(lines[$-1], false /*more*/);
-}
-
-
-void sendMsg(ref Socket socket, in Message message, in string key) @safe {
-    sendStrings(socket, message.toStrings(key));
 }

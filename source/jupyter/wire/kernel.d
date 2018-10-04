@@ -34,7 +34,7 @@ mixin template Main() {
    The "real main"
  */
 void run(in string connectionFileName) @safe {
-    import jupyter.wire.connection: fileNameToConnectionInfo;
+    import jupyter.wire.connection: fileNameToConnectionInfo, recvRequestMessage;
     import std.datetime: msecs;
     import core.thread: Thread;
 
@@ -50,16 +50,6 @@ void run(in string connectionFileName) @safe {
     }
 }
 
-Nullable!Message recvRequestMessage(ref Socket socket) @safe {
-    import jupyter.wire.connection: recvStrings;
-    import jupyter.wire.message: Message;
-    import std.typecons: Nullable, nullable;
-
-    const requestStrings = socket.recvStrings;
-    if(requestStrings is null) return Nullable!Message();
-
-    return nullable(Message(requestStrings));
-}
 
 bool maybeHandleRequestMessage(ref Sockets sockets, Nullable!Message requestMessage) @safe {
     if(requestMessage.isNull) return false;
@@ -68,59 +58,62 @@ bool maybeHandleRequestMessage(ref Sockets sockets, Nullable!Message requestMess
 
 // returns whether or not to shutdown
 bool handleRequestMessage(ref Sockets sockets, Message requestMessage) @safe {
-    import jupyter.wire.connection: sendMsg;
     import jupyter.wire.message: statusMessage, pubMessage;
 
     static int executionCount;
 
     auto busyMsg = statusMessage(requestMessage.header, "busy");
-    sockets.ioPub.sendMsg(busyMsg, sockets.key);
+    sockets.send(sockets.ioPub, busyMsg);
 
     switch(requestMessage.header.msgType) {
 
     default:
         return false;
 
+    case "shutdown_request":
+        // TODO: restart
+        auto replyMessage = Message(requestMessage, "shutdown_reply",
+                                    `{"restart": false}`);
+        sockets.send(sockets.control, replyMessage);
+        return true;
+
     case "kernel_info_request":
         auto replyMessage = Message(requestMessage, "kernel_info_reply",
                                     `{"protocol_version": "5.3.0", "implementation": "foo", "implementation_version": "0.0.1", "language_info": {"name": "foo", "version": "0.0.1", "mimetype": "footype", "file_extension": ".d"}}`);
-        sockets.shell.sendMsg(replyMessage, sockets.key);
+        sockets.send(sockets.shell, replyMessage);
 
         auto idleMsg = statusMessage(requestMessage.header, "idle");
-        sockets.ioPub.sendMsg(idleMsg, sockets.key);
+        sockets.send(sockets.ioPub, idleMsg);
 
         return false;
-
-    case "shutdown_request":
-        return true;
 
     case "execute_request":
         {
             auto msg = pubMessage(requestMessage.header, "execute_input",
                                   `{"execution_count": 1, "code": "lecode"}`);
-            sockets.ioPub.sendMsg(msg, sockets.key);
+            sockets.send(sockets.ioPub, msg);
         }
 
         {
             auto msg = pubMessage(requestMessage.header, "stream",
-                                  `{"name": "stdout", "text": "hello world"}`);
-            sockets.ioPub.sendMsg(msg, sockets.key);
+                                  `{"name": "stdout", "text": "this is stdout"}`);
+            sockets.send(sockets.ioPub, msg);
         }
 
         {
             auto msg = pubMessage(requestMessage.header, "execute_result",
-                                  `{"execution_count": 1, "data": {"text/plain": "result!"}, "metadata": {}}`);
-            sockets.ioPub.sendMsg(msg, sockets.key);
+                                  `{"execution_count": 1, "data": {"text/plain": "this is the result"}, "metadata": {}}`);
+            sockets.send(sockets.ioPub, msg);
         }
 
         {
             auto replyMessage = Message(requestMessage, "execute_reply",
                                         `{"status": "ok", "execution_count": 1, "user_variables": {}, "payload": [], "user_expressions": {}}`);
-            sockets.shell.sendMsg(replyMessage, sockets.key);
+            sockets.send(sockets.shell, replyMessage);
         }
 
         auto idleMsg = statusMessage(requestMessage.header, "idle");
-        sockets.ioPub.sendMsg(idleMsg, sockets.key);
+        sockets.send(sockets.ioPub, idleMsg);
 
         return false;
     }
