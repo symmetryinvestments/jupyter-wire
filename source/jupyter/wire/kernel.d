@@ -46,6 +46,7 @@ struct Kernel {
     private LanguageInfo languageInfo;
     private Sockets sockets;
     private int executionCount = 1;
+    private bool stop;
 
     this(LanguageInfo languageInfo, in string connectionFileName) @safe {
         import jupyter.wire.connection: fileNameToConnectionInfo;
@@ -62,11 +63,10 @@ struct Kernel {
         import std.datetime: msecs;
         import core.thread: Thread;
 
-        for(bool stop; !stop;) {
+        for(;!stop;) {
             maybeHandleHeartbeat(sockets);
-            const shellShutdown = maybeHandleRequestMessage(sockets.shell.recvRequestMessage);
-            const controlShutdown = maybeHandleRequestMessage(sockets.control.recvRequestMessage);
-            stop = shellShutdown || controlShutdown;
+            maybeHandleRequestMessage(sockets.shell.recvRequestMessage);
+            maybeHandleRequestMessage(sockets.control.recvRequestMessage);
             () @trusted { Thread.sleep(10.msecs); }();
         }
     }
@@ -79,13 +79,13 @@ struct Kernel {
         sockets.heartbeat.send(buf[0 .. length]);
     }
 
-    bool maybeHandleRequestMessage(Nullable!Message requestMessage) @safe {
-        if(requestMessage.isNull) return false;
-        return handleRequestMessage(requestMessage.get);
+    void maybeHandleRequestMessage(Nullable!Message requestMessage) @safe {
+        if(requestMessage.isNull) return;
+        handleRequestMessage(requestMessage.get);
     }
 
     // returns whether or not to shutdown
-    bool handleRequestMessage(Message requestMessage) @safe {
+    void handleRequestMessage(Message requestMessage) @safe {
 
         import jupyter.wire.message: statusMessage, pubMessage;
         import std.json : JSONValue, parseJSON;
@@ -100,32 +100,35 @@ struct Kernel {
 
         switch(requestMessage.header.msgType) {
 
-        default: return false;
+        default: return;
 
         case "shutdown_request":
-            return handleShutdown(requestMessage);
+            handleShutdown(requestMessage);
+            return;
 
         case "kernel_info_request":
-            return handleKernelInfoRequest(requestMessage);
+            handleKernelInfoRequest(requestMessage);
+            return;
 
         case "execute_request":
-            return handleExecuteRequest(requestMessage);
+            handleExecuteRequest(requestMessage);
+            return;
         }
 
         assert(0);
     }
 
 
-    bool handleShutdown(Message requestMessage) @safe {
+    void handleShutdown(Message requestMessage) @safe {
         // TODO: restart
         // The content of the request is just {"restart": bool} so we reuse it
         // for the reply.
         auto replyMessage = Message(requestMessage, "shutdown_reply", requestMessage.content);
         sockets.send(sockets.control, replyMessage);
-        return true;
+        stop = true;
     }
 
-    bool handleKernelInfoRequest(Message requestMessage) @safe {
+    void handleKernelInfoRequest(Message requestMessage) @safe {
         import std.json: JSONValue;
 
         JSONValue kernelInfo;
@@ -134,18 +137,16 @@ struct Kernel {
         kernelInfo["implementation"] = "foo";
         kernelInfo["implementation_version"] = "0.0.1";
         kernelInfo["language_info"] = JSONValue();
-        kernelInfo["language_info"]["name"] = "foo";
-        kernelInfo["language_info"]["version"] = "0.0.1";
-        kernelInfo["language_info"]["file_extension"] = ".d";
+        kernelInfo["language_info"]["name"] = languageInfo.name;
+        kernelInfo["language_info"]["version"] = languageInfo.version_;
+        kernelInfo["language_info"]["file_extension"] = languageInfo.fileExtension;
         kernelInfo["language_info"]["mimetype"] = "";
 
         auto replyMessage = Message(requestMessage, "kernel_info_reply", kernelInfo);
         sockets.send(sockets.shell, replyMessage);
-
-        return false;
     }
 
-    bool handleExecuteRequest(Message requestMessage) @safe {
+    void handleExecuteRequest(Message requestMessage) @safe {
         import jupyter.wire.message: pubMessage;
         import std.json: JSONValue, parseJSON;
 
@@ -187,8 +188,5 @@ struct Kernel {
             auto replyMessage = Message(requestMessage, "execute_reply", content);
             sockets.send(sockets.shell, replyMessage);
         }
-
-        return false;
-
     }
 }
