@@ -1,21 +1,16 @@
 module jupyter.wire.kernel;
 
 
-import jupyter.wire.message: Message;
-import jupyter.wire.connection: ConnectionInfo, Sockets;
-import zmqd: Socket;
-import std.typecons: Nullable;
-
-
 /**
    So users don't have to write their own main
  */
-mixin template Main(LanguageInfo languageInfo) {
+mixin template Main(Backend) {
     int main(string[] args) {
         try {
             import jupyter.wire.kernel: Kernel;
             const connectionFileName = args[1];
-            auto kernel = Kernel(languageInfo, connectionFileName);
+            auto backend = Backend();
+            auto kernel = Kernel!Backend(backend, connectionFileName);
             kernel.run;
             return 0;
         } catch(Exception e) {
@@ -38,27 +33,45 @@ struct LanguageInfo {
     string fileExtension;
 }
 
+struct ExecutionResult {
+    string result;
+    string stdout;
+}
 
-struct Kernel {
+template isBackend(T) {
+    enum isBackend = is(typeof({
+        LanguageInfo info = T.init.languageInfo;
+        ExecutionResult result = T.init.execute("foo");
+    }));
+}
+
+/**
+   Implements a generic Jupyter kernel.
+   Parameterised by a `Backend` type that knows how to execute code.
+
+ */
+struct Kernel(Backend) if(isBackend!Backend) {
 
     import jupyter.wire.connection: ConnectionInfo, Sockets;
+    import jupyter.wire.message: Message;
+    import std.typecons: Nullable;
 
-    private LanguageInfo languageInfo;
+    private Backend backend;
     private Sockets sockets;
     private int executionCount = 1;
     private bool stop;
 
-    this(LanguageInfo languageInfo, in string connectionFileName) @safe {
+    this(Backend backend, in string connectionFileName)  {
         import jupyter.wire.connection: fileNameToConnectionInfo;
-        this(languageInfo, fileNameToConnectionInfo(connectionFileName));
+        this(backend, fileNameToConnectionInfo(connectionFileName));
     }
 
-    this(LanguageInfo languageInfo, ConnectionInfo connectionInfo) @safe {
-        this.languageInfo = languageInfo;
+    this(Backend backend, ConnectionInfo connectionInfo)  {
+        this.backend = backend;
         this.sockets = Sockets(connectionInfo);
     }
 
-    void run() @safe {
+    void run()  {
         import jupyter.wire.connection: recvRequestMessage;
         import std.datetime: msecs;
         import core.thread: Thread;
@@ -71,7 +84,7 @@ struct Kernel {
         }
     }
 
-    void maybeHandleHeartbeat(ref Sockets sockets) @safe {
+    void maybeHandleHeartbeat(ref Sockets sockets)  {
         ubyte[1024] buf;
         const ret = sockets.heartbeat.tryReceive(buf);
         const length = ret[0];
@@ -79,13 +92,13 @@ struct Kernel {
         sockets.heartbeat.send(buf[0 .. length]);
     }
 
-    void maybeHandleRequestMessage(Nullable!Message requestMessage) @safe {
+    void maybeHandleRequestMessage(Nullable!Message requestMessage)  {
         if(requestMessage.isNull) return;
         handleRequestMessage(requestMessage.get);
     }
 
     // returns whether or not to shutdown
-    void handleRequestMessage(Message requestMessage) @safe {
+    void handleRequestMessage(Message requestMessage)  {
 
         import jupyter.wire.message: statusMessage, pubMessage;
         import std.json : JSONValue, parseJSON;
@@ -119,7 +132,7 @@ struct Kernel {
     }
 
 
-    void handleShutdown(Message requestMessage) @safe {
+    void handleShutdown(Message requestMessage)  {
         // TODO: restart
         // The content of the request is just {"restart": bool} so we reuse it
         // for the reply.
@@ -128,7 +141,7 @@ struct Kernel {
         stop = true;
     }
 
-    void handleKernelInfoRequest(Message requestMessage) @safe {
+    void handleKernelInfoRequest(Message requestMessage)  {
         import std.json: JSONValue;
 
         JSONValue kernelInfo;
@@ -137,16 +150,16 @@ struct Kernel {
         kernelInfo["implementation"] = "foo";
         kernelInfo["implementation_version"] = "0.0.1";
         kernelInfo["language_info"] = JSONValue();
-        kernelInfo["language_info"]["name"] = languageInfo.name;
-        kernelInfo["language_info"]["version"] = languageInfo.version_;
-        kernelInfo["language_info"]["file_extension"] = languageInfo.fileExtension;
+        kernelInfo["language_info"]["name"] = backend.languageInfo.name;
+        kernelInfo["language_info"]["version"] = backend.languageInfo.version_;
+        kernelInfo["language_info"]["file_extension"] = backend.languageInfo.fileExtension;
         kernelInfo["language_info"]["mimetype"] = "";
 
         auto replyMessage = Message(requestMessage, "kernel_info_reply", kernelInfo);
         sockets.send(sockets.shell, replyMessage);
     }
 
-    void handleExecuteRequest(Message requestMessage) @safe {
+    void handleExecuteRequest(Message requestMessage)  {
         import jupyter.wire.message: pubMessage;
         import std.json: JSONValue, parseJSON, JSON_TYPE;
 
@@ -163,7 +176,7 @@ struct Kernel {
             sockets.send(sockets.ioPub, msg);
         }
 
-        const result = execute(requestMessage.content["code"].str);
+        const result = backend.execute(requestMessage.content["code"].str);
 
         {
             JSONValue content;
@@ -194,15 +207,4 @@ struct Kernel {
             sockets.send(sockets.shell, replyMessage);
         }
     }
-}
-
-
-struct ExecutionResult {
-    string result;
-    string stdout;
-}
-
-ExecutionResult execute(in string code) @safe {
-    return ExecutionResult("this is the new result for '" ~ code ~ "'",
-                           "and this is the new stdout for '" ~ code ~ "'");
 }
