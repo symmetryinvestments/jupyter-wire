@@ -1,4 +1,4 @@
-name "jupyter"
+name "jupyter-wire"
 description "Jupyter kernel written in D"
 authors "Atila Neves"
 copyright "Copyright © 2018, Atila Neves"
@@ -6,4 +6,4 @@ license "boost"
 dependency "zmqd" version="~>1.1.1"
 // Only using asdf to do JSON serialisation
 dependency "asdf" version="~>0.2.2"
-targetName "foo"
+targetType "library"
