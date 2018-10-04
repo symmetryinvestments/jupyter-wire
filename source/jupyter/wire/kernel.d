@@ -10,12 +10,12 @@ import std.typecons: Nullable;
 /**
    So users don't have to write their own main
  */
-mixin template Main() {
+mixin template Main(LanguageInfo languageInfo) {
     int main(string[] args) {
         try {
             import jupyter.wire.kernel: Kernel;
             const connectionFileName = args[1];
-            auto kernel = Kernel(LanguageInfo(), connectionFileName);
+            auto kernel = Kernel(languageInfo, connectionFileName);
             kernel.run;
             return 0;
         } catch(Exception e) {
@@ -45,7 +45,7 @@ struct Kernel {
 
     private LanguageInfo languageInfo;
     private Sockets sockets;
-    private int executionCount;
+    private int executionCount = 1;
 
     this(LanguageInfo languageInfo, in string connectionFileName) @safe {
         import jupyter.wire.connection: fileNameToConnectionInfo;
