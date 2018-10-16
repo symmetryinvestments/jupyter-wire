@@ -18,7 +18,7 @@ mixin template Main(Backend) {
             error("Error: ", e.msg);
             return 1;
         } catch(Error e) {
-            error("FATAL ERROR: ", e);
+            error("FATAL ERROR: ", e.toString);
             return 2;
         }
     }
