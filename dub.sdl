@@ -1,4 +1,4 @@
-name "jupyter-wire"
+name "jupyter_wire"
 description "Jupyter kernel written in D"
 authors "Atila Neves"
 copyright "Copyright © 2018, Atila Neves"
