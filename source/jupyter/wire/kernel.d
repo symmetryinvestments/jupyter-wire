@@ -84,19 +84,10 @@ struct Kernel(Backend) if(isBackend!Backend) {
         import core.thread: Thread;
 
         for(;!stop;) {
-            maybeHandleHeartbeat(sockets.heartbeat);
             maybeHandleRequestMessage(sockets.shell.recvRequestMessage);
             maybeHandleRequestMessage(sockets.control.recvRequestMessage);
             () @trusted { Thread.sleep(10.msecs); }();
         }
-    }
-
-    void maybeHandleHeartbeat(ref Socket socket)  {
-        ubyte[1024] buf;
-        const ret = socket.tryReceive(buf);
-        const length = ret[0];
-        if(!length) return;
-        socket.send(buf[0 .. length]);
     }
 
     void maybeHandleRequestMessage(Nullable!Message requestMessage)  {

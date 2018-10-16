@@ -42,9 +42,14 @@ struct Sockets {
     import jupyter.wire.message: MessageHeader;
     import zmqd: Socket, SocketType;
     import std.json: JSONValue;
+    import std.concurrency: Tid;
 
     ConnectionInfo connectionInfo;
-    Socket shell, control, stdin, ioPub, heartbeat;
+    Socket shell, control, stdin, ioPub;
+    Tid heartbeatTid;
+
+    static struct Stop{}
+    static struct Done{}
 
     this(ConnectionInfo ci) @safe {
         import zmqd: SocketType;
@@ -55,7 +60,12 @@ struct Sockets {
         initSocket(control,   SocketType.router, ci, ci.controlPort);
         initSocket(stdin,     SocketType.router, ci, ci.stdinPort);
         initSocket(ioPub,     SocketType.pub,    ci, ci.ioPubPort);
-        initSocket(heartbeat, SocketType.rep,    ci, ci.hbPort);
+
+        startHeartbeatLoop;
+    }
+
+    ~this() {
+        stopHeartbeatLoop;
     }
 
     private static void initSocket(ref Socket socket, in SocketType socketType, in ConnectionInfo ci, in ushort port) @safe {
@@ -73,11 +83,53 @@ struct Sockets {
         send(ioPub, pubMessage(parentHeader, msgType, content));
     }
 
+    /**
+       "Send" stdout output to jupyter notebook
+     */
     void stdout(in MessageHeader parentHeader, in string stdout) @safe {
         JSONValue content;
         content["name"] = "stdout";
         content["text"] = stdout;
         publish(parentHeader, "stream", content);
+    }
+
+    private void startHeartbeatLoop() @safe {
+        import std.concurrency: spawn, thisTid;
+        heartbeatTid = () @trusted { return spawn(&heartbeatLoop, thisTid, connectionInfo); }();
+    }
+
+    private void stopHeartbeatLoop() @trusted {
+        import std.concurrency: send, receiveOnly;
+        heartbeatTid.send(Stop());
+        receiveOnly!Done;
+        heartbeatTid = Tid.init;
+    }
+
+    private static void heartbeatLoop(Tid parentTid, ConnectionInfo connectionInfo) @safe {
+        import std.concurrency: receiveTimeout, send;
+        import std.datetime: msecs;
+
+        auto socket = Socket(SocketType.rep);
+        socket.bind(connectionInfo.uri(connectionInfo.hbPort));
+
+        ubyte[1024] buf;
+
+        for(bool stop; !stop;) {
+            () @trusted {
+                receiveTimeout(
+                    10.msecs,
+                    (Stop _) {
+                        stop = true;
+                    },
+                );
+            }();
+
+            const ret = socket.tryReceive(buf);
+            const length = ret[0];
+            if(length) socket.send(buf[0 .. length]);
+        }
+
+        () @trusted { parentTid.send(Done()); }();
     }
 }
 

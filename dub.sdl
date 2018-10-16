@@ -7,12 +7,3 @@ dependency "zmqd" version="~>1.1.1"
 // Only using asdf to do JSON serialisation
 dependency "asdf" version="~>0.2.2"
 targetType "library"
-
-
-configuration "default" {
-    dflags "-dip25" "-dip1000" "-dip1008"
-}
-
-configuration "nodips" {
-
-}
