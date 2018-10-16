@@ -6,6 +6,7 @@ module jupyter.wire.kernel;
  */
 mixin template Main(Backend) {
     int main(string[] args) {
+        import std.experimental.logger: error;
         try {
             import jupyter.wire.kernel: Kernel;
             const connectionFileName = args[1];
@@ -14,12 +15,10 @@ mixin template Main(Backend) {
             k.run;
             return 0;
         } catch(Exception e) {
-            import std.stdio: stderr;
-            stderr.writeln("Error: ", e.msg);
+            error("Error: ", e.msg);
             return 1;
         } catch(Error e) {
-            import std.stdio: stderr;
-            stderr.writeln("FATAL ERROR: ", e);
+            error("FATAL ERROR: ", e);
             return 2;
         }
     }
