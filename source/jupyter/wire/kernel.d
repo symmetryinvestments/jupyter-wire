@@ -60,6 +60,7 @@ struct Kernel(Backend) if(isBackend!Backend) {
 
     import jupyter.wire.connection: ConnectionInfo, Sockets;
     import jupyter.wire.message: Message;
+    import zmqd: Socket;
     import std.typecons: Nullable;
 
     private Backend backend;
@@ -83,19 +84,19 @@ struct Kernel(Backend) if(isBackend!Backend) {
         import core.thread: Thread;
 
         for(;!stop;) {
-            maybeHandleHeartbeat(sockets);
+            maybeHandleHeartbeat(sockets.heartbeat);
             maybeHandleRequestMessage(sockets.shell.recvRequestMessage);
             maybeHandleRequestMessage(sockets.control.recvRequestMessage);
             () @trusted { Thread.sleep(10.msecs); }();
         }
     }
 
-    void maybeHandleHeartbeat(ref Sockets sockets)  {
+    void maybeHandleHeartbeat(ref Socket socket)  {
         ubyte[1024] buf;
-        const ret = sockets.heartbeat.tryReceive(buf);
+        const ret = socket.tryReceive(buf);
         const length = ret[0];
         if(!length) return;
-        sockets.heartbeat.send(buf[0 .. length]);
+        socket.send(buf[0 .. length]);
     }
 
     void maybeHandleRequestMessage(Nullable!Message requestMessage)  {
