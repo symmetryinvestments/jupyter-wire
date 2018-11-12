@@ -7,3 +7,18 @@ dependency "zmqd" version="~>1.1.1"
 // Only using asdf to do JSON serialisation
 dependency "asdf" version="~>0.2.2"
 targetType "library"
+
+
+configuration "default" {
+
+}
+
+configuration "unittest" {
+    targetType "executable"
+    targetPath "bin"
+    targetName "ut"
+    mainSourceFile "tests/test_main.d"
+    sourcePaths "tests"
+    importPaths "tests"
+    dependency "unit-threaded" version="*"
+}
