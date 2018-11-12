@@ -8,11 +8,7 @@ mixin template Main(Backend) {
     int main(string[] args) {
         import std.experimental.logger: error;
         try {
-            import jupyter.wire.kernel: Kernel;
-            const connectionFileName = args[1];
-            auto backend = Backend();
-            auto k = kernel(backend, connectionFileName);
-            k.run;
+            run!Backend(args);
             return 0;
         } catch(Exception e) {
             error("Error: ", e.msg);
@@ -22,6 +18,19 @@ mixin template Main(Backend) {
             return 2;
         }
     }
+}
+
+void run(Backend)(in string[] args) {
+    import jupyter.wire.kernel: Kernel;
+    import std.exception: enforce;
+
+    const exeName = args.length > 0 ? args[0] : "<exeName>";
+    enforce(args.length == 2, "Usage: " ~ exeName ~ " <connectionFileName>");
+
+    const connectionFileName = args[1];
+    auto backend = Backend();
+    auto k = kernel(backend, connectionFileName);
+    k.run;
 }
 
 
