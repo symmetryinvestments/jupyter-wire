@@ -36,3 +36,9 @@ k.run;
 ```
 
 Please consult the `example` directory for a working (albeit silly) kernel.
+
+
+## Windows
+
+Set the environment variables `ZMQ_DIR_32` and/or `ZMQ_DIR_64` for where to find the `zmq.lib`
+when building. Remember to copy the revelant .dll to the executable path.
