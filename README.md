@@ -1,6 +1,9 @@
 jupyter-wire
 ------------
 
+[![Build Status](https://travis-ci.org/kaleidicassociates/jupyter-wire.png?branch=master)](https://travis-ci.org/kaleidicassociates/jupyter-wire)
+
+
 An implementation of the [Jupyter wire
 protocol](https://jupyter-client.readthedocs.io/en/stable/messaging.html#wire-protocol)
 in [D](https://dlang.org).
