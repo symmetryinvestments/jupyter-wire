@@ -3,7 +3,7 @@ sudo: false
 
 matrix:
   include:
-    - d: dmd-2.085.0
+    # dmd seems to not work no Travis
     - d: ldc-1.14.0
     - d: ldc-1.13.0
     - d: ldc-1.12.0
