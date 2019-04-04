@@ -104,7 +104,6 @@ struct Kernel(Backend) if(isBackend!Backend) {
         handleRequestMessage(requestMessage.get);
     }
 
-    // returns whether or not to shutdown
     void handleRequestMessage(Message requestMessage)  {
 
         import jupyter.wire.message: statusMessage, pubMessage;

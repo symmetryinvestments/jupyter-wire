@@ -1,3 +1,3 @@
 name "example_kernel"
 targetType "executable"
-dependency "jupyter-wire" path=".."
+dependency "jupyter_wire" path=".."
