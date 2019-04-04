@@ -13,6 +13,7 @@ a jupyter kernel. A backend must be a D type that satisfies the following
 compile-time interface:
 
 ```d
+import jupyter.wire.kernel: LanguageInfo, ExecutionResult;
 LanguageInfo info = T.init.languageInfo;
 ExecutionResult result = T.init.execute("foo");
 ```
@@ -27,13 +28,14 @@ struct MyBackend {
     }
 }
 
+import jupyter.wire.kernel: Main;
 mixin Main!MyBackend;
 ```
 
 Otherwise, initialise as necessary and call `Kernel.run`:
 
 ```d
-import jupyter.wire.kernel: Kernel;
+import jupyter.wire.kernel: kernel;
 auto k = kernel(backend, connectionFileName);
 k.run;
 ```
