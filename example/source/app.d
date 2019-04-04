@@ -22,19 +22,22 @@ struct ExampleBackend {
             throw new ExampleException("Unkown command '" ~ code ~ "'");
 
         case "99":
-            return ExecutionResult("99 bottles of beer on the wall");
+            return textResult("99 bottles of beer on the wall");
 
         case "inc":
-            return ExecutionResult(text(++value));
+            return textResult(text(++value));
 
         case "dec":
-            return ExecutionResult(text(--value));
+            return textResult(text(--value));
 
         case "print":
-            return ExecutionResult("", text(value));
+            return textResult("", Stdout(text(value)));
 
         case "hello":
-            return ExecutionResult("", "Hello world!");
+            return textResult("", Stdout("Hello world!"));
+
+        case "markup":
+            return markdownResult(`# Big header`);
         }
     }
 }

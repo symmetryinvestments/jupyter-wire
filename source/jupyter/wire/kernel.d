@@ -44,6 +44,20 @@ struct LanguageInfo {
 struct ExecutionResult {
     string result;
     string stdout;
+    string mime = "text/plain";
+}
+
+
+struct Stdout {
+    string value;
+}
+
+ExecutionResult textResult(string result, Stdout stdout = Stdout("")) @safe pure nothrow {
+    return ExecutionResult(result, stdout.value, "text/plain");
+}
+
+ExecutionResult markdownResult(string result, Stdout stdout = Stdout("")) @safe pure nothrow {
+    return ExecutionResult(result, stdout.value, "text/markdown");
 }
 
 
@@ -183,18 +197,16 @@ struct Kernel(Backend) if(isBackend!Backend) {
             sockets.send(sockets.ioPub, msg);
         }
 
-        ExecutionResult result;
-
         try {
 
-            result = backend.execute(requestMessage.content["code"].str);
+            const result = backend.execute(requestMessage.content["code"].str);
             sockets.stdout(requestMessage.header, result.stdout);
 
             {
                 JSONValue content;
                 content["execution_count"] = executionCount;
                 content["data"] = JSONValue();
-                content["data"]["text/plain"] = result.result;
+                content["data"][result.mime] = result.result;
                 content["metadata"] = parseJSON(`{}`);
                 sockets.publish(requestMessage.header, "execute_result", content);
             }

@@ -19,3 +19,4 @@ commands:
 * inc
 * dec
 * print
+* markup
