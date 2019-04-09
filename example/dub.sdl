@@ -1,3 +1,16 @@
 name "example_kernel"
 targetType "executable"
 dependency "jupyter_wire" path=".."
+
+configuration "default" {
+
+}
+
+configuration "windbg" {
+    versions "JupyterLogVerbose"
+}
+
+
+configuration "wincon" {
+    versions "JupyterLogStdout"
+}

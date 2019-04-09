@@ -106,6 +106,7 @@ struct Sockets {
     }
 
     private static void heartbeatLoop(Tid parentTid, ConnectionInfo connectionInfo) @safe {
+        import jupyter.wire.log: log;
         import std.concurrency: receiveTimeout, send;
         import std.datetime: msecs;
 
@@ -115,6 +116,7 @@ struct Sockets {
         ubyte[1024] buf;
 
         for(bool stop; !stop;) {
+            log("Thread top of loop");
             () @trusted {
                 receiveTimeout(
                     10.msecs,
@@ -124,9 +126,14 @@ struct Sockets {
                 );
             }();
 
+            log("no stop!");
+            log("try receive on buf");
             const ret = socket.tryReceive(buf);
+            log("ret is ", ret);
             const length = ret[0];
+            log("sending heartbeat");
             if(length) socket.send(buf[0 .. length]);
+            log("bottom of thread loop");
         }
 
         () @trusted { parentTid.send(Done()); }();
@@ -158,7 +165,10 @@ private string[] recvStrings(ref Socket socket) @safe {
 
     do {
         auto frame = Frame();
+        import jupyter.wire.log: log;
+        log("tryReceive");
         const ret /*size, bool*/ = socket.tryReceive(frame);
+        log("ret: ", ret);
         if(!ret[1]) return [];
         strings ~= cast(string) frame.data.idup;
     } while(socket.more);

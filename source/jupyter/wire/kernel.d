@@ -6,15 +6,15 @@ module jupyter.wire.kernel;
  */
 mixin template Main(Backend) {
     int main(string[] args) {
-        import std.experimental.logger: error;
+        import jupyter.wire.log: log;
         try {
             run!Backend(args);
             return 0;
         } catch(Exception e) {
-            error("Error: ", e.msg);
+            log("Error: ", e.msg);
             return 1;
         } catch(Error e) {
-            error("FATAL ERROR: ", e.toString);
+            log("FATAL ERROR: ", e.toString);
             return 2;
         }
     }
@@ -97,6 +97,10 @@ struct Kernel(Backend) if(isBackend!Backend) {
     }
 
     this(Backend backend, ConnectionInfo connectionInfo)  {
+        import jupyter.wire.log: log;
+
+        log("Jupyter kernel starting with connection info ", connectionInfo);
+
         this.backend = backend;
         this.sockets = Sockets(connectionInfo);
     }
@@ -106,27 +110,41 @@ struct Kernel(Backend) if(isBackend!Backend) {
         import std.datetime: msecs;
         import core.thread: Thread;
 
+        import jupyter.wire.log; // DELETE
+
         for(;!stop;) {
+            log("Top of loop");
+            log("Try shell");
             maybeHandleRequestMessage(sockets.shell.recvRequestMessage);
+            log("Try control");
             maybeHandleRequestMessage(sockets.control.recvRequestMessage);
-            () @trusted { Thread.sleep(10.msecs); }();
+            () @trusted { log("sleeping"); Thread.sleep(10.msecs); }();
         }
     }
 
     void maybeHandleRequestMessage(Nullable!Message requestMessage)  {
         if(requestMessage.isNull) return;
+
+        version(JupyterLogVerbose) {
+            import jupyter.wire.log: log;
+            log("Received message from the front-end.");
+        }
+
         handleRequestMessage(requestMessage.get);
     }
 
     void handleRequestMessage(Message requestMessage)  {
 
         import jupyter.wire.message: statusMessage, pubMessage;
+        import jupyter.wire.log: log;
         import std.json : JSONValue, parseJSON;
 
+        version(JupyterLogVerbose) log("Sending busy message to the FE");
         auto busyMsg = statusMessage(requestMessage.header, "busy");
         sockets.send(sockets.ioPub, busyMsg);
 
         scope(exit) {
+            version(JupyterLogVerbose) log("Sending idle message to the FE");
             auto idleMsg = statusMessage(requestMessage.header, "idle");
             sockets.send(sockets.ioPub, idleMsg);
         }
@@ -136,14 +154,17 @@ struct Kernel(Backend) if(isBackend!Backend) {
         default: return;
 
         case "shutdown_request":
+            version(JupyterLogVerbose) log("Told by the FE to shutdown");
             handleShutdown(requestMessage);
             return;
 
         case "kernel_info_request":
+            version(JupyterLogVerbose) log("Asked by the FE to return kernel info");
             handleKernelInfoRequest(requestMessage);
             return;
 
         case "execute_request":
+            version(JupyterLogVerbose) log("Told by the FE to execute code");
             handleExecuteRequest(requestMessage);
             return;
         }
