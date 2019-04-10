@@ -2,11 +2,11 @@
 docs.json
 __dummy.html
 docs/
-jupyter.so
-jupyter.dylib
-jupyter.dll
-jupyter.a
-jupyter.lib
+*.so
+*.dylib
+*.dll
+*.a
+*.lib
 jupyter-test-*
 *.exe
 *.o
@@ -14,5 +14,4 @@ jupyter-test-*
 *.lst
 .ipynb_checkpoints
 *.a
-*.lib
 bin
