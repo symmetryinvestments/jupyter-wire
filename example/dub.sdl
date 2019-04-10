@@ -6,11 +6,16 @@ configuration "default" {
 
 }
 
-configuration "windbg" {
+configuration "verbose" {
     versions "JupyterLogVerbose"
 }
 
 
-configuration "wincon" {
+configuration "stdout" {
     versions "JupyterLogStdout"
+}
+
+
+configuration "stdout-verbose" {
+    versions "JupyterLogStdout" "JupyterLogVerbose"
 }
