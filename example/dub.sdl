@@ -1,3 +1,21 @@
 name "example_kernel"
 targetType "executable"
 dependency "jupyter_wire" path=".."
+
+configuration "default" {
+
+}
+
+configuration "verbose" {
+    versions "JupyterLogVerbose"
+}
+
+
+configuration "stdout" {
+    versions "JupyterLogStdout"
+}
+
+
+configuration "stdout-verbose" {
+    versions "JupyterLogStdout" "JupyterLogVerbose"
+}
