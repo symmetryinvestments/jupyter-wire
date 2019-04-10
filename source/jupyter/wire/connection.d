@@ -2,7 +2,7 @@ module jupyter.wire.connection;
 
 
 import jupyter.wire.message: Message;
-import zmqd: Socket;
+import zmqd: Socket, Frame;
 import std.typecons: Nullable;
 
 
@@ -105,38 +105,55 @@ struct Sockets {
         heartbeatTid = Tid.init;
     }
 
-    private static void heartbeatLoop(Tid parentTid, ConnectionInfo connectionInfo) @safe {
+    private static void heartbeatLoop(Tid parentTid, ConnectionInfo connectionInfo) @safe nothrow {
         import jupyter.wire.log: log;
+        import zmqd: ZmqException;
         import std.concurrency: receiveTimeout, send;
         import std.datetime: msecs;
 
-        auto socket = Socket(SocketType.rep);
-        socket.bind(connectionInfo.uri(connectionInfo.hbPort));
+        try {
+            auto socket = Socket(SocketType.rep);
+            socket.bind(connectionInfo.uri(connectionInfo.hbPort));
 
-        ubyte[1024] buf;
+            ubyte[1024] buf;
 
-        for(bool stop; !stop;) {
-            log("Thread top of loop");
-            () @trusted {
-                receiveTimeout(
-                    10.msecs,
-                    (Stop _) {
-                        stop = true;
-                    },
-                );
-            }();
+            for(bool stop; !stop;) {
+                () @trusted {
+                    receiveTimeout(
+                        10.msecs,
+                        (Stop _) {
+                            stop = true;
+                        },
+                        );
+                }();
 
-            log("no stop!");
-            log("try receive on buf");
-            const ret = socket.tryReceive(buf);
-            log("ret is ", ret);
-            const length = ret[0];
-            log("sending heartbeat");
-            if(length) socket.send(buf[0 .. length]);
-            log("bottom of thread loop");
+                const ret /*size, bool*/ = socket.maybeReceive(buf);
+                const length = ret[0];
+                if(length) socket.send(buf[0 .. length]);
+            }
+
+            () @trusted { parentTid.send(Done()); }();
+        } catch(Exception e) {
+            log("ERROR in heartbeat thread: ", e.msg);
         }
+    }
+}
 
-        () @trusted { parentTid.send(Done()); }();
+// workaround for zmqd bug
+// https://github.com/kyllingstad/zmqd/issues/22
+auto maybeReceive(T)(ref Socket socket, ref T arg) @trusted {
+    import zmqd: ZmqException;
+    import deimos.zmq.zmq: zmq_errno;
+    import std.typecons: tuple;
+    import core.stdc.errno: EAGAIN;
+
+    try {
+        return socket.tryReceive(arg);
+    } catch(ZmqException e) {
+        if(zmq_errno != EAGAIN)
+            throw e;
+
+        return tuple(cast(size_t) 0, false);
     }
 }
 
@@ -166,9 +183,7 @@ private string[] recvStrings(ref Socket socket) @safe {
     do {
         auto frame = Frame();
         import jupyter.wire.log: log;
-        log("tryReceive");
-        const ret /*size, bool*/ = socket.tryReceive(frame);
-        log("ret: ", ret);
+        const ret /*size, bool*/ = socket.maybeReceive(frame);
         if(!ret[1]) return [];
         strings ~= cast(string) frame.data.idup;
     } while(socket.more);
