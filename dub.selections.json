@@ -1,8 +1,8 @@
 {
 	"fileVersion": 1,
 	"versions": {
-		"asdf": "0.2.5",
-		"unit-threaded": "0.9.1",
+		"asdf": "0.4.6",
+		"unit-threaded": "0.9.3",
 		"zeromq": "4.2.2",
 		"zmqd": "1.1.1"
 	}
