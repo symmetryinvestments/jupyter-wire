@@ -52,6 +52,10 @@ struct Stdout {
     string value;
 }
 
+ExecutionResult mimeResult(string result, Stdout stdout = Stdout(""), string mimeType="application/text") @safe pure nothrow {
+	return ExecutionResult(result,stdout.value,mimeType);
+}
+
 ExecutionResult textResult(string result, Stdout stdout = Stdout("")) @safe pure nothrow {
     return ExecutionResult(result, stdout.value, "text/plain");
 }
@@ -153,6 +157,26 @@ struct Kernel(Backend) if(isBackend!Backend) {
 
         default: return;
 
+		case "inspect_request": 
+			version(JupyterLogVerbose) log("request info from interpreter - not handled yet");
+			return;
+
+		case "complete_request":
+			version(JupyterLogVerbose) log("completion request from interpreter - not handled yet");
+			return;
+
+		case "history_request":
+			version(JupyterLogVerbose) log("history request from interpreter - not handled yet");
+			return;
+
+		case "is_complete_request":
+			version(JupyterLogVerbose) log("is autocomplete request from interpreter - not handled yet");
+			return;
+
+		case "comm_info_request":
+			version(JupyterLogVerbose) log("comm info request from kernel - not handled yet");
+			return;
+
         case "shutdown_request":
             version(JupyterLogVerbose) log("Told by the FE to shutdown");
             handleShutdown(requestMessage);
@@ -166,6 +190,7 @@ struct Kernel(Backend) if(isBackend!Backend) {
         case "execute_request":
             version(JupyterLogVerbose) log("Told by the FE to execute code");
             handleExecuteRequest(requestMessage);
+			// should publishStatus(Status.idle) only if command completed ?
             return;
         }
 
