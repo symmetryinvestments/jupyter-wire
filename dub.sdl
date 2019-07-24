@@ -5,7 +5,7 @@ copyright "Copyright © 2018, Atila Neves"
 license "boost"
 dependency "zmqd" version="~>1.1.1"
 // Only using asdf to do JSON serialisation
-dependency "asdf" version=">=0.2.2 <0.5.0"
+dependency "asdf" version=">=0.2.2 <0.6.0"
 targetType "library"
 
 lflags "/LIBPATH:$ZMQ_DIR_64" platform="windows-x86_64"
