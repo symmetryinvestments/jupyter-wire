@@ -161,8 +161,9 @@ struct CompleteResult
     string status;
 }
 
-Message completeMessage(MessageHeader header, string[] matches, int cursorStart, int cursorEnd, string[string] metadata, string status) @safe {
+Message completeMessage(const(MessageHeader) header, const(string)[] matches, const int cursorStart, const int cursorEnd, const(string[string]) metadata, const string status = "ok") @safe {
     import std.json: JSONValue;
+	import std.experimental.logger : infof;
     JSONValue content;
     content["matches"] = matches;
     content["cursor_start"] = cursorStart;
@@ -171,6 +172,7 @@ Message completeMessage(MessageHeader header, string[] matches, int cursorStart,
     content["status"] = status;
     auto ret = Message(header,"complete_reply",content);
     ret.identities = ["complete_reply"];
+	infof("complete message = %s",ret);
     return ret;
 }
 

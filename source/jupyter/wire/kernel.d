@@ -153,6 +153,13 @@ struct Kernel(Backend) if(isBackend!Backend) {
 
         default: return;
 
+		case "complete_request":
+		    import std.experimental.logger : infof;
+		    infof("complete request %s",requestMessage);
+			log("complete request",requestMessage);
+			handleCompleteRequest(requestMessage);
+			return;
+
         case "shutdown_request":
             version(JupyterLogVerbose) log("Told by the FE to shutdown");
             handleShutdown(requestMessage);
@@ -202,13 +209,18 @@ struct Kernel(Backend) if(isBackend!Backend) {
     }
 
     void handleCompleteRequest(Message requestMessage) {
-        import jupyter.wire.message: pubMessage;
+        import jupyter.wire.message: completeMessage;
         import std.json: JSONValue, parseJSON, JSON_TYPE;
-        import std.conv: text;
+        import std.conv: text,to;
+        import jupyter.wire.log: log;
 
-        const result = backend.complete(requestMessage.content["code"].str,requestMessage.content["cursor_pos"].int_);
+        const result = backend.complete(requestMessage.content["code"].str,requestMessage.content["cursor_pos"].integer.to!int);
+		log("result = ",result);
         auto msg = completeMessage(requestMessage.header,result.matches,result.cursorStart,result.cursorEnd,result.metadata,result.status);
-        sockets.send(sockets.shell,msg);
+		log("result message = ",msg);
+		sockets.send(sockets.shell,msg);
+        //sockets.send(sockets.shell,msg);
+        //sockets.send(sockets.ioPub,msg);
     }
 
     void handleExecuteRequest(Message requestMessage)  {
