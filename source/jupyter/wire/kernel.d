@@ -206,7 +206,7 @@ struct Kernel(Backend) if(isBackend!Backend) {
         import std.json: JSONValue, parseJSON, JSON_TYPE;
         import std.conv: text;
 
-        const result = backend.complete(requestMessage.content["code"].str,requestMessage.content["cursor_pos"].int);
+        const result = backend.complete(requestMessage.content["code"].str,requestMessage.content["cursor_pos"].int_);
         auto msg = completeMessage(requestMessage.header,result.matches,result.cursorStart,result.cursorEnd,result.metadata,result.status);
         sockets.send(sockets.shell,msg);
     }
