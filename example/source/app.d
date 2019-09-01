@@ -1,5 +1,5 @@
 import jupyter.wire.kernel;
-
+import jupyter.wire.message : CompleteResult;
 
 mixin Main!ExampleBackend;
 
@@ -39,5 +39,21 @@ struct ExampleBackend {
         case "markup":
             return markdownResult(`# Big header`);
         }
+    }
+
+    CompleteResult complete(string code, int cursorPos)
+    {
+        import std.algorithm : map;
+        import std.array : array;
+        import std.experimental.logger: infof;
+
+        infof("complete request %s %s",code,cursorPos);
+        CompleteResult ret;
+        ret.matches = ["1","2","3"].map!(x => code ~ "_" ~ x).array;
+        ret.cursorStart = 1;
+        ret.cursorEnd = cursorPos;
+        ret.status = "ok";
+        infof("complete response %s",ret);
+        return ret;
     }
 }
