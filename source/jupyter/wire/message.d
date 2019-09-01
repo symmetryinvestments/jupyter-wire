@@ -152,3 +152,25 @@ Message pubMessage(MessageHeader header, in string msgType, JSONValue content) @
     ret.identities = [msgType];
     return ret;
 }
+struct CompleteResult
+{
+    string[] matches;
+    int cursorStart;
+    int cursorEnd;
+    string[string] metadata;
+    string status;
+}
+
+Message completeMessage(MessageHeader header, string[] matches, int cursorStart, int cursorEnd, string[string] metadata, string status) @safe {
+    import std.json: JSONValue;
+    JSONValue content;
+    content["matches"] = matches;
+    content["cursor_start"] = cursorStart;
+    content["cursor_end"] = cursorEnd;
+    content["metadata"] = metadata;
+    content["status"] = status;
+    auto ret = Message(header,"complete_reply",content);
+    ret.identities = ["complete_reply"];
+    return ret;
+}
+

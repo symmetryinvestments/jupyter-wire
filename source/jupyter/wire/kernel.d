@@ -201,6 +201,16 @@ struct Kernel(Backend) if(isBackend!Backend) {
         sockets.send(sockets.shell, replyMessage);
     }
 
+    void handleCompleteRequest(Message requestMessage) {
+        import jupyter.wire.message: pubMessage;
+        import std.json: JSONValue, parseJSON, JSON_TYPE;
+        import std.conv: text;
+
+        const result = backend.complete(requestMessage.content["code"].str,requestMessage.content["cursor_pos"].int);
+        auto msg = completeMessage(requestMessage.header,result.matches,result.cursorStart,result.cursorEnd,result.metadata,result.status);
+        sockets.send(sockets.shell,msg);
+    }
+
     void handleExecuteRequest(Message requestMessage)  {
         import jupyter.wire.message: pubMessage;
         import std.json: JSONValue, parseJSON, JSONType;
@@ -262,3 +272,4 @@ struct Kernel(Backend) if(isBackend!Backend) {
         }
     }
 }
+
