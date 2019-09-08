@@ -3,7 +3,7 @@ description "Jupyter kernel written in D"
 authors "Atila Neves"
 copyright "Copyright © 2018, Atila Neves"
 license "boost"
-dependency "zmqd" version="*"
+dependency "zmqd" version="~1.1.0" // 1.1.0 or master works; 1.1.1 not
 // Only using asdf to do JSON serialisation
 dependency "asdf" version=">=0.2.2 <0.6.0"
 targetType "library"

@@ -154,9 +154,12 @@ struct Kernel(Backend) if(isBackend!Backend) {
         default: return;
 
 		case "complete_request":
-		    import std.experimental.logger : infof;
-		    infof("complete request %s",requestMessage);
-			log("complete request",requestMessage);
+			version(TraceCompletion)
+			{
+				import std.experimental.logger : infof;
+				infof("complete request %s",requestMessage);
+				log("complete request",requestMessage);
+			}
 			handleCompleteRequest(requestMessage);
 			return;
 

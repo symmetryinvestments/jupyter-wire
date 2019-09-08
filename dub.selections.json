@@ -1,9 +1,0 @@
-{
-	"fileVersion": 1,
-	"versions": {
-		"asdf": "0.5.0",
-		"unit-threaded": "0.9.3",
-		"zeromq": "4.2.2",
-		"zmqd": "~master"
-	}
-}
