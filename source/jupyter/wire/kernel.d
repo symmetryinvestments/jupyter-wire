@@ -210,17 +210,15 @@ struct Kernel(Backend) if(isBackend!Backend) {
 
     void handleCompleteRequest(Message requestMessage) {
         import jupyter.wire.message: completeMessage;
-        import std.json: JSONValue, parseJSON, JSON_TYPE;
+        import std.json: JSONValue, parseJSON, JSONType;
         import std.conv: text,to;
         import jupyter.wire.log: log;
 
         const result = backend.complete(requestMessage.content["code"].str,requestMessage.content["cursor_pos"].integer.to!int);
-		log("result = ",result);
-        auto msg = completeMessage(requestMessage.header,result.matches,result.cursorStart,result.cursorEnd,result.metadata,result.status);
-		log("result message = ",msg);
+		version(TraceCompletion) log("result = ",result);
+        auto msg = completeMessage(requestMessage,result.matches,result.cursorStart,result.cursorEnd,result.metadata,result.status);
+		version(TraceCompletion) log("result message = ",msg);
 		sockets.send(sockets.shell,msg);
-        //sockets.send(sockets.shell,msg);
-        //sockets.send(sockets.ioPub,msg);
     }
 
     void handleExecuteRequest(Message requestMessage)  {

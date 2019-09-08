@@ -43,17 +43,18 @@ struct ExampleBackend {
 
     CompleteResult complete(string code, int cursorPos)
     {
-        import std.algorithm : map;
+        import std.algorithm : map , canFind;
         import std.array : array;
         import std.experimental.logger: infof;
+		import std.conv : to;
 
-        infof("complete request %s %s",code,cursorPos);
+        version(TraceCompletion) infof("complete request %s %s",code,cursorPos);
         CompleteResult ret;
         ret.matches = ["1","2","3"].map!(x => code ~ "_" ~ x).array;
-        ret.cursorStart = 1;
+        ret.cursorStart = cursorPos - code.length.to!int;
         ret.cursorEnd = cursorPos;
-        ret.status = "ok";
-        infof("complete response %s",ret);
+        ret.status = code.canFind("@err") ? "error" : "ok";
+        version(TraceCompletion) infof("complete response %s",ret);
         return ret;
     }
 }
