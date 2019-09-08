@@ -38,6 +38,7 @@ struct LanguageInfo {
     string name;
     string version_;
     string fileExtension;
+	string mimeType;
 }
 
 
@@ -194,17 +195,21 @@ struct Kernel(Backend) if(isBackend!Backend) {
 
     void handleKernelInfoRequest(Message requestMessage)  {
         import std.json: JSONValue;
+		import std.traits : hasMember;
 
         JSONValue kernelInfo;
         kernelInfo["status"] = "ok";
         kernelInfo["protocol_version"] = "5.3.0";
         kernelInfo["implementation"] = "foo";
         kernelInfo["implementation_version"] = "0.0.1";
+        static if (hasMember!(Backend,"banner"))
+            kernelInfo["banner"] = backend.banner;
         JSONValue[string] languageInfo;
         languageInfo["name"] = backend.languageInfo.name;
         languageInfo["version"] = backend.languageInfo.version_;
         languageInfo["file_extension"] = backend.languageInfo.fileExtension;
-        languageInfo["mimetype"] = "";
+		static if (hasMember!(LanguageInfo,"mimeType"))
+			languageInfo["mimetype"] = backend.languageInfo.mimeType;
         kernelInfo["language_info"] = languageInfo;
 
         auto replyMessage = Message(requestMessage, "kernel_info_reply", kernelInfo);
