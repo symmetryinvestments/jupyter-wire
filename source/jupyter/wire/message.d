@@ -133,8 +133,8 @@ private string toJsonString(MessageHeader header) @safe pure {
 }
 
 private string toJsonString(in JSONValue json) @safe {
-    import std.json: JSON_TYPE;
-    return json.type == JSON_TYPE.NULL ? `{}` : json.toString;
+    import std.json: JSONType;
+    return json.type == JSONType.null_ ? `{}` : json.toString;
 }
 
 
