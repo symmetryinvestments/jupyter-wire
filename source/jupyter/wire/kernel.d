@@ -190,12 +190,12 @@ struct Kernel(Backend) if(isBackend!Backend) {
         kernelInfo["protocol_version"] = "5.3.0";
         kernelInfo["implementation"] = "foo";
         kernelInfo["implementation_version"] = "0.0.1";
-		JSON[string] languageInfo;
+        JSONValue[string] languageInfo;
         languageInfo["name"] = backend.languageInfo.name;
         languageInfo["version"] = backend.languageInfo.version_;
         languageInfo["file_extension"] = backend.languageInfo.fileExtension;
         languageInfo["mimetype"] = "";
-		kernelInfo["language_info"] = languageInfo;
+        kernelInfo["language_info"] = languageInfo;
 
         auto replyMessage = Message(requestMessage, "kernel_info_reply", kernelInfo);
         sockets.send(sockets.shell, replyMessage);
