@@ -221,12 +221,16 @@ struct Kernel(Backend) if(isBackend!Backend) {
         import std.json: JSONValue, parseJSON, JSONType;
         import std.conv: text,to;
         import jupyter.wire.log: log;
+	import std.traits : hasMember;
 
-        const result = backend.complete(requestMessage.content["code"].str,requestMessage.content["cursor_pos"].integer.to!int);
-		version(TraceCompletion) log("result = ",result);
-        auto msg = completeMessage(requestMessage,result.matches,result.cursorStart,result.cursorEnd,result.metadata,result.status);
-		version(TraceCompletion) log("result message = ",msg);
-		sockets.send(sockets.shell,msg);
+	static if (hasMember!(typeof(backend),"complete"))
+	{
+		const result = backend.complete(requestMessage.content["code"].str,requestMessage.content["cursor_pos"].integer.to!int);
+			version(TraceCompletion) log("result = ",result);
+		auto msg = completeMessage(requestMessage,result.matches,result.cursorStart,result.cursorEnd,result.metadata,result.status);
+			version(TraceCompletion) log("result message = ",msg);
+			sockets.send(sockets.shell,msg);
+	}
     }
 
     void handleExecuteRequest(Message requestMessage)  {
