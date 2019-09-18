@@ -190,11 +190,12 @@ struct Kernel(Backend) if(isBackend!Backend) {
         kernelInfo["protocol_version"] = "5.3.0";
         kernelInfo["implementation"] = "foo";
         kernelInfo["implementation_version"] = "0.0.1";
-        kernelInfo["language_info"] = JSONValue();
-        kernelInfo["language_info"]["name"] = backend.languageInfo.name;
-        kernelInfo["language_info"]["version"] = backend.languageInfo.version_;
-        kernelInfo["language_info"]["file_extension"] = backend.languageInfo.fileExtension;
-        kernelInfo["language_info"]["mimetype"] = "";
+        JSONValue[string] languageInfo;
+        languageInfo["name"] = backend.languageInfo.name;
+        languageInfo["version"] = backend.languageInfo.version_;
+        languageInfo["file_extension"] = backend.languageInfo.fileExtension;
+        languageInfo["mimetype"] = "";
+        kernelInfo["language_info"] = languageInfo;
 
         auto replyMessage = Message(requestMessage, "kernel_info_reply", kernelInfo);
         sockets.send(sockets.shell, replyMessage);
@@ -202,11 +203,11 @@ struct Kernel(Backend) if(isBackend!Backend) {
 
     void handleExecuteRequest(Message requestMessage)  {
         import jupyter.wire.message: pubMessage;
-        import std.json: JSONValue, parseJSON, JSON_TYPE;
+        import std.json: JSONValue, parseJSON, JSONType;
         import std.conv: text;
 
         scope(exit) {
-            if(requestMessage.content["store_history"].type == JSON_TYPE.true_)
+            if(requestMessage.content["store_history"].type == JSONType.true_)
             ++executionCount;
         }
 
