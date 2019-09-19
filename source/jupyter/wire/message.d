@@ -1,5 +1,4 @@
-module jupyter.wire.message;
-
+module jupyter.wire.message; 
 import std.json: JSONValue;
 
 /**
@@ -152,3 +151,31 @@ Message pubMessage(MessageHeader header, in string msgType, JSONValue content) @
     ret.identities = [msgType];
     return ret;
 }
+struct CompleteResult
+{
+    string[] matches;
+    int cursorStart;
+    int cursorEnd;
+    string[string] metadata;
+    string status;
+}
+
+Message completeMessage(const(Message) requestMessage, const(string)[] matches, const int cursorStart, const int cursorEnd, const(string[string]) metadata, const string status = "complete") @safe {
+    import std.json: JSONValue, toJSON;
+	import std.experimental.logger : infof;
+    JSONValue[string] content;
+    content["matches"] = matches;
+    content["cursor_start"] = cursorStart;
+    content["cursor_end"] = cursorEnd;
+    content["metadata"] = metadata;
+    content["status"] = status;
+	JSONValue contentJSON = JSONValue(content);
+    auto ret = Message(requestMessage,"complete_reply",contentJSON);
+	version(TraceCompletion)
+	{
+		infof("content message = %s",contentJSON.toJSON);
+		infof("full message = %s",ret.toStrings(""));
+	}
+    return ret;
+}
+
