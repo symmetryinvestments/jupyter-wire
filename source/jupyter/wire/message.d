@@ -173,7 +173,6 @@ Message completeMessage(
     @safe
 {
     import std.json: JSONValue, toJSON;
-    import std.experimental.logger : infof;
 
     JSONValue[string] content;
     content["matches"] = matches;
@@ -183,7 +182,7 @@ Message completeMessage(
     content["status"] = status;
 
     auto contentJSON = JSONValue(content);
-    auto ret = Message(requestMessage,"complete_reply",contentJSON);
+    auto ret = Message(requestMessage, "complete_reply", contentJSON);
 
     return ret;
 }
