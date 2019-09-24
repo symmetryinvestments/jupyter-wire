@@ -2,6 +2,10 @@ language: d
 dist: xenial
 sudo: false
 
+env:
+  global:
+    - DUB_BUILD_TYPE=unittest-cov
+
 matrix:
   include:
     - d: dmd
@@ -20,7 +24,8 @@ addons:
       - libzmq3-dev
 
 script:
-  - dub test --build=unittest-cov --compiler=${DC}
+  - export DC=${DC}
+  - ./ci.sh
 
 after_success:
  - bash <(curl -s https://codecov.io/bash)
