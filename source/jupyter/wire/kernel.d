@@ -155,12 +155,6 @@ struct Kernel(Backend) if(isBackend!Backend) {
         default: return;
 
         case "complete_request":
-            version(TraceCompletion)
-            {
-                import std.experimental.logger : infof;
-                infof("complete request %s",requestMessage);
-                log("complete request",requestMessage);
-            }
             handleCompleteRequest(requestMessage);
             return;
 
@@ -197,20 +191,21 @@ struct Kernel(Backend) if(isBackend!Backend) {
         import std.json: JSONValue;
         import std.traits : hasMember;
 
-        JSONValue kernelInfo;
-        kernelInfo["status"] = "ok";
-        kernelInfo["protocol_version"] = "5.3.0";
-        kernelInfo["implementation"] = "foo";
-        kernelInfo["implementation_version"] = "0.0.1";
-        static if (hasMember!(Backend,"banner"))
-            kernelInfo["banner"] = backend.banner;
         JSONValue[string] languageInfo;
         languageInfo["name"] = backend.languageInfo.name;
         languageInfo["version"] = backend.languageInfo.version_;
         languageInfo["file_extension"] = backend.languageInfo.fileExtension;
         static if (hasMember!(LanguageInfo,"mimeType"))
             languageInfo["mimetype"] = backend.languageInfo.mimeType;
+
+        JSONValue kernelInfo;
+        kernelInfo["status"] = "ok";
+        kernelInfo["protocol_version"] = "5.3.0";
+        kernelInfo["implementation"] = "foo";
+        kernelInfo["implementation_version"] = "0.0.1";
         kernelInfo["language_info"] = languageInfo;
+        static if (hasMember!(Backend, "banner"))
+            kernelInfo["banner"] = backend.banner;
 
         auto replyMessage = Message(requestMessage, "kernel_info_reply", kernelInfo);
         sockets.send(sockets.shell, replyMessage);
@@ -221,16 +216,15 @@ struct Kernel(Backend) if(isBackend!Backend) {
         import std.json: JSONValue, parseJSON, JSONType;
         import std.conv: text,to;
         import jupyter.wire.log: log;
-    import std.traits : hasMember;
+        import std.traits : hasMember;
 
-    static if (hasMember!(typeof(backend),"complete"))
-    {
-        const result = backend.complete(requestMessage.content["code"].str,requestMessage.content["cursor_pos"].integer.to!int);
-            version(TraceCompletion) log("result = ",result);
-        auto msg = completeMessage(requestMessage,result.matches,result.cursorStart,result.cursorEnd,result.metadata,result.status);
-            version(TraceCompletion) log("result message = ",msg);
-            sockets.send(sockets.shell,msg);
-    }
+        static if (hasMember!(typeof(backend), "complete")) {
+            const result = backend.complete(requestMessage.content["code"].str,
+                                            requestMessage.content["cursor_pos"].integer.to!int);
+            auto msg = completeMessage(requestMessage, result.matches, result.cursorStart,
+                                       result.cursorEnd, result.metadata, result.status);
+            sockets.send(sockets.shell, msg);
+        }
     }
 
     void handleExecuteRequest(Message requestMessage)  {
