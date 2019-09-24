@@ -213,14 +213,12 @@ struct Kernel(Backend) if(isBackend!Backend) {
 
     void handleCompleteRequest(Message requestMessage) {
         import jupyter.wire.message: completeMessage;
-        import std.conv: to;
         import std.traits: hasMember;
 
         static if (hasMember!(typeof(backend), "complete")) {
             const result = backend.complete(requestMessage.content["code"].str,
-                                            requestMessage.content["cursor_pos"].integer.to!int);
-            auto msg = completeMessage(requestMessage, result.matches, result.cursorStart,
-                                       result.cursorEnd, result.metadata, result.status);
+                                            requestMessage.content["cursor_pos"].integer);
+            auto msg = completeMessage(requestMessage, result);
             sockets.send(sockets.shell, msg);
         }
     }
