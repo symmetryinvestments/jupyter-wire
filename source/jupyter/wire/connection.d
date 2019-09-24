@@ -193,8 +193,6 @@ private string[] recvStrings(ref Socket socket) @safe {
 
 // Send multiple strings at once over ZeroMQ
 private void sendStrings(ref Socket socket, in string[] lines) @safe {
-	import std.stdio;
-	version(TraceConnection) debug writefln("*** sending %s",lines);
     foreach(line; lines[0 .. $-1])
         socket.send(line, true /*more*/);
     socket.send(lines[$-1], false /*more*/);
