@@ -38,7 +38,7 @@ struct LanguageInfo {
     string name;
     string version_;
     string fileExtension;
-	string mimeType;
+    string mimeType;
 }
 
 
@@ -154,15 +154,15 @@ struct Kernel(Backend) if(isBackend!Backend) {
 
         default: return;
 
-		case "complete_request":
-			version(TraceCompletion)
-			{
-				import std.experimental.logger : infof;
-				infof("complete request %s",requestMessage);
-				log("complete request",requestMessage);
-			}
-			handleCompleteRequest(requestMessage);
-			return;
+        case "complete_request":
+            version(TraceCompletion)
+            {
+                import std.experimental.logger : infof;
+                infof("complete request %s",requestMessage);
+                log("complete request",requestMessage);
+            }
+            handleCompleteRequest(requestMessage);
+            return;
 
         case "shutdown_request":
             version(JupyterLogVerbose) log("Told by the FE to shutdown");
@@ -195,7 +195,7 @@ struct Kernel(Backend) if(isBackend!Backend) {
 
     void handleKernelInfoRequest(Message requestMessage)  {
         import std.json: JSONValue;
-		import std.traits : hasMember;
+        import std.traits : hasMember;
 
         JSONValue kernelInfo;
         kernelInfo["status"] = "ok";
@@ -208,8 +208,8 @@ struct Kernel(Backend) if(isBackend!Backend) {
         languageInfo["name"] = backend.languageInfo.name;
         languageInfo["version"] = backend.languageInfo.version_;
         languageInfo["file_extension"] = backend.languageInfo.fileExtension;
-		static if (hasMember!(LanguageInfo,"mimeType"))
-			languageInfo["mimetype"] = backend.languageInfo.mimeType;
+        static if (hasMember!(LanguageInfo,"mimeType"))
+            languageInfo["mimetype"] = backend.languageInfo.mimeType;
         kernelInfo["language_info"] = languageInfo;
 
         auto replyMessage = Message(requestMessage, "kernel_info_reply", kernelInfo);
@@ -221,16 +221,16 @@ struct Kernel(Backend) if(isBackend!Backend) {
         import std.json: JSONValue, parseJSON, JSONType;
         import std.conv: text,to;
         import jupyter.wire.log: log;
-	import std.traits : hasMember;
+    import std.traits : hasMember;
 
-	static if (hasMember!(typeof(backend),"complete"))
-	{
-		const result = backend.complete(requestMessage.content["code"].str,requestMessage.content["cursor_pos"].integer.to!int);
-			version(TraceCompletion) log("result = ",result);
-		auto msg = completeMessage(requestMessage,result.matches,result.cursorStart,result.cursorEnd,result.metadata,result.status);
-			version(TraceCompletion) log("result message = ",msg);
-			sockets.send(sockets.shell,msg);
-	}
+    static if (hasMember!(typeof(backend),"complete"))
+    {
+        const result = backend.complete(requestMessage.content["code"].str,requestMessage.content["cursor_pos"].integer.to!int);
+            version(TraceCompletion) log("result = ",result);
+        auto msg = completeMessage(requestMessage,result.matches,result.cursorStart,result.cursorEnd,result.metadata,result.status);
+            version(TraceCompletion) log("result message = ",msg);
+            sockets.send(sockets.shell,msg);
+    }
     }
 
     void handleExecuteRequest(Message requestMessage)  {
@@ -294,4 +294,3 @@ struct Kernel(Backend) if(isBackend!Backend) {
         }
     }
 }
-

@@ -1,6 +1,7 @@
 import jupyter.wire.kernel;
 import jupyter.wire.message : CompleteResult;
 
+
 mixin Main!ExampleBackend;
 
 
@@ -8,6 +9,7 @@ class ExampleException: Exception {
     import std.exception: basicExceptionCtors;
     mixin basicExceptionCtors;
 }
+
 
 struct ExampleBackend {
 
@@ -46,7 +48,7 @@ struct ExampleBackend {
         import std.algorithm : map , canFind;
         import std.array : array;
         import std.experimental.logger: infof;
-		import std.conv : to;
+        import std.conv : to;
 
         version(TraceCompletion) infof("complete request %s %s",code,cursorPos);
         CompleteResult ret;
