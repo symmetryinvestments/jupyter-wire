@@ -213,10 +213,8 @@ struct Kernel(Backend) if(isBackend!Backend) {
 
     void handleCompleteRequest(Message requestMessage) {
         import jupyter.wire.message: completeMessage;
-        import std.json: JSONValue, parseJSON, JSONType;
-        import std.conv: text,to;
-        import jupyter.wire.log: log;
-        import std.traits : hasMember;
+        import std.conv: to;
+        import std.traits: hasMember;
 
         static if (hasMember!(typeof(backend), "complete")) {
             const result = backend.complete(requestMessage.content["code"].str,
