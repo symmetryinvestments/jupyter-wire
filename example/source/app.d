@@ -43,14 +43,13 @@ struct ExampleBackend {
         }
     }
 
-    CompleteResult complete(string code, int cursorPos) {
+    CompleteResult complete(string code, long cursorPos) {
         import std.algorithm : map, canFind;
         import std.array : array;
-        import std.conv : to;
 
         CompleteResult ret;
         ret.matches = ["1", "2", "3"].map!(x => code ~ "_" ~ x).array;
-        ret.cursorStart = cursorPos - code.length.to!int;
+        ret.cursorStart = cursorPos - code.length;
         ret.cursorEnd = cursorPos;
         ret.status = code.canFind("@err") ? "error" : "ok";
         return ret;

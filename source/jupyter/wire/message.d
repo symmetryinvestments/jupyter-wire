@@ -156,33 +156,22 @@ Message pubMessage(MessageHeader header, in string msgType, JSONValue content) @
 
 struct CompleteResult {
     string[] matches;
-    int cursorStart;
-    int cursorEnd;
+    long cursorStart;
+    long cursorEnd;
     string[string] metadata;
     string status;
 }
 
 
-Message completeMessage(
-    const(Message) requestMessage,
-    const(string)[] matches,
-    const int cursorStart,
-    const int cursorEnd,
-    const(string[string]) metadata,
-    const string status = "complete")
-    @safe
-{
-    import std.json: JSONValue, toJSON;
+Message completeMessage(in Message requestMessage, in CompleteResult result) @safe {
+    import std.json: JSONValue;
 
-    JSONValue[string] content;
-    content["matches"] = matches;
-    content["cursor_start"] = cursorStart;
-    content["cursor_end"] = cursorEnd;
-    content["metadata"] = metadata;
-    content["status"] = status;
+    JSONValue content;
+    content["matches"] = result.matches;
+    content["cursor_start"] = result.cursorStart;
+    content["cursor_end"] = result.cursorEnd;
+    content["metadata"] = result.metadata;
+    content["status"] = result.status;
 
-    auto contentJSON = JSONValue(content);
-    auto ret = Message(requestMessage, "complete_reply", contentJSON);
-
-    return ret;
+    return Message(requestMessage, "complete_reply", content);
 }
