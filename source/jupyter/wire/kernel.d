@@ -111,15 +111,10 @@ struct Kernel(Backend) if(isBackend!Backend) {
         import std.datetime: msecs;
         import core.thread: Thread;
 
-        import jupyter.wire.log; // DELETE
-
         for(;!stop;) {
-            log("Top of loop");
-            log("Try shell");
             maybeHandleRequestMessage(sockets.shell.recvRequestMessage);
-            log("Try control");
             maybeHandleRequestMessage(sockets.control.recvRequestMessage);
-            () @trusted { log("sleeping"); Thread.sleep(10.msecs); }();
+            () @trusted { Thread.sleep(10.msecs); }();
         }
     }
 
