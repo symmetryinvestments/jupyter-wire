@@ -2,7 +2,7 @@
 	"fileVersion": 1,
 	"versions": {
 		"asdf": "0.5.2",
-		"unit-threaded": "0.10.3",
+		"unit-threaded": "0.10.4",
 		"zeromq": "4.2.2",
 		"zmqd": "1.1.2"
 	}
