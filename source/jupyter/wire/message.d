@@ -124,6 +124,13 @@ struct MessageHeader {
                      string session;
                      string date;
     @key("version")  string protocolVersion;
+
+    static auto empty() {
+        import jupyter.wire.kernel : protocolVersion;
+        auto header = MessageHeader();
+        header.protocolVersion = protocolVersion;
+        return header;
+    }
 }
 
 // can't be made a member function because `serializetoJson(this)` doesn't compile
@@ -179,4 +186,50 @@ Message completeMessage(in Message requestMessage, in CompleteResult result) @sa
     content["status"] = result.status;
 
     return Message(requestMessage, "complete_reply", content);
+}
+
+Message commOpenMessage(in string commId, in string targetName, JSONValue data = JSONValue(), JSONValue metadata = JSONValue()) {
+
+    JSONValue content;
+    content["comm_id"] = commId;
+    content["target_name"] = targetName;
+    content["data"] = data;
+
+    return pubMessage(MessageHeader.empty(), "comm_open", content, metadata);
+}
+
+Message commCloseMessage(in Message requestMessage) {
+
+    JSONValue content;
+    content["comm_id"] = requestMessage.content["comm_id"];
+
+    return pubMessage(requestMessage.header, "comm_close", content);
+}
+
+Message commCloseMessage(in string commId, JSONValue data = JSONValue()) {
+
+    JSONValue content;
+    content["comm_id"] = commId;
+    content["data"] = data;
+
+    return pubMessage(MessageHeader.empty(), "comm_close", content);
+}
+
+Message commMessage(in string commId, JSONValue data = JSONValue(), JSONValue metadata = JSONValue()) {
+
+    JSONValue content;
+    content["comm_id"] = commId;
+    content["data"] = data;
+
+    return pubMessage(MessageHeader.empty(), "comm_msg", content, metadata);
+}
+
+Message displayDataMessage(JSONValue data, JSONValue metadata = JSONValue()) {
+
+    import std.json : JSONType, parseJSON;
+    JSONValue content;
+    content["data"] = data;
+    content["metadata"] = metadata.type == JSONType.object ? metadata : parseJSON(`{}`);
+
+    return pubMessage(MessageHeader.empty(), "display_data", content);
 }
