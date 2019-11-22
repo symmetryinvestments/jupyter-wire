@@ -2,6 +2,8 @@ name "example_kernel"
 targetType "executable"
 dependency "jupyter_wire" path="../.."
 
+dflags "-dip1000"
+
 configuration "default" {
 	versions "StdLoggerDisableTrace"
 }

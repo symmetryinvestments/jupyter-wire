@@ -70,7 +70,8 @@ ExecutionResult markdownResult(string result, Stdout stdout = Stdout("")) @safe 
 template isBackend(T) {
     enum isBackend = is(typeof({
         LanguageInfo info = T.init.languageInfo;
-        ExecutionResult result = T.init.execute("foo");
+        scope IoPubMessageSender sender = (Message){};
+        ExecutionResult result = T.init.execute("foo", sender);
     }));
 }
 
@@ -291,7 +292,7 @@ struct Kernel(Backend) if(isBackend!Backend) {
         }
     }
 
-    void handleExecuteRequest(Message requestMessage)  {
+    void handleExecuteRequest(Message requestMessage) @safe {
         import jupyter.wire.message: pubMessage;
         import std.json: JSONValue, parseJSON, JSONType;
         import std.conv: text;
@@ -310,8 +311,11 @@ struct Kernel(Backend) if(isBackend!Backend) {
         }
 
         try {
-
-            const result = backend.execute(requestMessage.content["code"].str);
+            scope sender = (Message msg){
+                    msg.parentHeader = requestMessage.header;
+                    sockets.send(sockets.ioPub, msg);
+                };
+            const result = backend.execute(requestMessage.content["code"].str, sender);
             sockets.stdout(requestMessage.header, result.stdout);
 
             {
@@ -336,7 +340,7 @@ struct Kernel(Backend) if(isBackend!Backend) {
 
         } catch(Exception e) {
 
-            sockets.stdout(requestMessage.header, text("Error: ", e.msg));
+            (() @trusted { sockets.stdout(requestMessage.header, text("Error: ", e.msg)); })();
 
             {
                 JSONValue content;
@@ -344,7 +348,7 @@ struct Kernel(Backend) if(isBackend!Backend) {
                 content["execution_count"] = executionCount;
                 content["ename"] = typeid(e).name;
                 content["evalue"] = e.msg;
-                content["traceback"] = text(e);
+                (() @trusted { content["traceback"] = text(e); })();
 
                 auto replyMessage = Message(requestMessage, "execute_reply", content);
                 sockets.send(sockets.shell, replyMessage);

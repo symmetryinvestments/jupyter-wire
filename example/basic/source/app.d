@@ -16,7 +16,7 @@ struct ExampleBackend {
     enum languageInfo = LanguageInfo("foo", "0.0.1", ".foo");
     int value;
 
-    ExecutionResult execute(in string code) @safe {
+    ExecutionResult execute(in string code, scope IoPubMessageSender sender) @safe {
         import std.conv: text;
 
         switch(code) {
