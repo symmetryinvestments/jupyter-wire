@@ -1,5 +1,6 @@
 module jupyter.wire.kernel;
 
+enum protocolVersion = "5.3.0";
 
 /**
    So users don't have to write their own main
@@ -198,7 +199,7 @@ struct Kernel(Backend) if(isBackend!Backend) {
 
         JSONValue kernelInfo;
         kernelInfo["status"] = "ok";
-        kernelInfo["protocol_version"] = "5.3.0";
+        kernelInfo["protocol_version"] = protocolVersion;
         kernelInfo["implementation"] = "foo";
         kernelInfo["implementation_version"] = "0.0.1";
         kernelInfo["language_info"] = languageInfo;
