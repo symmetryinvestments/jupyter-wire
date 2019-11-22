@@ -1,6 +1,6 @@
 name "example_kernel"
 targetType "executable"
-dependency "jupyter_wire" path=".."
+dependency "jupyter_wire" path="../.."
 
 configuration "default" {
 	versions "StdLoggerDisableTrace"
