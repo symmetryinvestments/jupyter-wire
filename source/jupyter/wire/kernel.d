@@ -98,12 +98,15 @@ struct Kernel(Backend) if(isBackend!Backend) {
     }
 
     this(Backend backend, ConnectionInfo connectionInfo)  {
+        import std.traits : hasMember;
         import jupyter.wire.log: log;
 
         log("Jupyter kernel starting with connection info ", connectionInfo);
 
         this.backend = backend;
         this.sockets = Sockets(connectionInfo);
+        static if (hasMember!(Backend, "initialize"))
+            this.backend.initialize();
     }
 
     void run()  {
