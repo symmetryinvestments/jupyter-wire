@@ -1,8 +1,8 @@
-name "basic_example_kernel"
+name "widgets_example_kernel"
 targetType "executable"
 dependency "jupyter_wire" path="../.."
-
-dflags "-dip1000"
+dependency "pegged" version="0.4.4"
+dependency "sumtype" version="0.9.2"
 
 configuration "default" {
 	versions "StdLoggerDisableTrace"

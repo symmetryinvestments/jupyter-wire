@@ -56,7 +56,7 @@ struct Stdout {
     string value;
 }
 
-alias IoPubMessageSender = void delegate(Message);
+alias IoPubMessageSender = void delegate(Message) @safe;
 
 ExecutionResult textResult(string result, Stdout stdout = Stdout("")) @safe pure nothrow {
     return ExecutionResult(result, stdout.value, "text/plain");
