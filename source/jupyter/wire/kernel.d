@@ -1,5 +1,7 @@
 module jupyter.wire.kernel;
 
+import jupyter.wire.message: Message;
+
 enum protocolVersion = "5.3.0";
 
 /**
@@ -54,6 +56,8 @@ struct Stdout {
     string value;
 }
 
+alias IoPubMessageSender = void delegate(Message);
+
 ExecutionResult textResult(string result, Stdout stdout = Stdout("")) @safe pure nothrow {
     return ExecutionResult(result, stdout.value, "text/plain");
 }
@@ -84,7 +88,6 @@ auto kernel(Backend, Args...)(Backend backend, auto ref Args args) {
 struct Kernel(Backend) if(isBackend!Backend) {
 
     import jupyter.wire.connection: ConnectionInfo, Sockets;
-    import jupyter.wire.message: Message;
     import zmqd: Socket;
     import std.typecons: Nullable;
 
@@ -171,11 +174,77 @@ struct Kernel(Backend) if(isBackend!Backend) {
             version(JupyterLogVerbose) log("Told by the FE to execute code");
             handleExecuteRequest(requestMessage);
             return;
+
+        case "comm_open":
+            version(JupyterLogVerbose) log("Told by the FE to open a comm");
+            handleCommOpen(requestMessage);
+            return;
+
+        case "comm_msg":
+            version(JupyterLogVerbose) log("Received a comm msg from the FE");
+            handleCommMessage(requestMessage);
+            return;
+
+        case "comm_close":
+            version(JupyterLogVerbose) log("Told by the FE to close a comm");
+            handleCommClose(requestMessage);
+            return;
         }
 
         assert(0);
     }
 
+    void handleCommOpen(Message requestMessage) {
+        import jupyter.wire.message: commCloseMessage;
+        import std.traits: hasMember;
+
+        bool success = false;
+        scope(exit) if (!success) {
+                auto msg = commCloseMessage(requestMessage);
+                sockets.send(sockets.ioPub, msg);
+            }
+
+        static if (hasMember!(typeof(backend), "commOpen")) {
+            scope sender = (Message msg){
+                    msg.parentHeader = requestMessage.header;
+                    sockets.send(sockets.ioPub, msg);
+                };
+            success = backend.commOpen(requestMessage.content["comm_id"].str,
+                                       requestMessage.content["target_name"].str,
+                                       requestMessage.metadata["version"].str,
+                                       requestMessage.content["data"],
+                                       sender);
+        }
+    }
+
+    void handleCommMessage(Message requestMessage) {
+        import std.traits: hasMember;
+
+        static if (hasMember!(typeof(backend), "commMessage")) {
+            scope sender = (Message msg){
+                    msg.parentHeader = requestMessage.header;
+                    sockets.send(sockets.ioPub, msg);
+                };
+            backend.commMessage(requestMessage.content["comm_id"].str,
+                                requestMessage.content["data"],
+                                sender);
+        }
+    }
+
+    void handleCommClose(Message requestMessage) {
+        import std.traits: hasMember;
+
+        static if (hasMember!(typeof(backend), "commClose")) {
+            scope sender = (Message msg){
+                    msg.parentHeader = requestMessage.header;
+                    sockets.send(sockets.ioPub, msg);
+                };
+            backend.commClose(requestMessage.content["comm_id"].str,
+                              requestMessage.content["data"],
+                              sender);
+
+        }
+    }
 
     void handleShutdown(Message requestMessage)  {
         // TODO: restart
