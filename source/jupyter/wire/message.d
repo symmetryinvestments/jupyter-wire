@@ -147,9 +147,14 @@ Message statusMessage(MessageHeader header, in string status) @safe {
 }
 
 
-Message pubMessage(MessageHeader header, in string msgType, JSONValue content) @safe {
+Message pubMessage(MessageHeader header, in string msgType, JSONValue content, JSONValue metadata = JSONValue()) @safe {
+    import std.json : JSONType, parseJSON;
     auto ret = Message(header, msgType, content);
     ret.identities = [msgType];
+    if (metadata.type == JSONType.object)
+        ret.metadata = metadata;
+    else
+        ret.metadata = parseJSON(`{}`);
     return ret;
 }
 
