@@ -6,7 +6,7 @@ import jupyter.wire.kernel;
 
 private struct DummyBackend {
     enum languageInfo = LanguageInfo();
-    ExecutionResult execute(in string) {
+    ExecutionResult execute(in string, scope IoPubMessageSender sender) @safe {
         return ExecutionResult.init;
     }
 }

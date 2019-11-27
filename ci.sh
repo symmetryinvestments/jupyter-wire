@@ -10,5 +10,5 @@ echo "dub build type: $DUB_BUILD_TYPE"
 echo "DC: $DC"
 
 dub test -q --build="$DUB_BUILD_TYPE" --compiler="$DC"
-cd "$SCRIPT_DIR"/example
+cd "$SCRIPT_DIR"/example/basic
 dub build -q
