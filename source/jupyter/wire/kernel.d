@@ -196,25 +196,32 @@ struct Kernel(Backend) if(isBackend!Backend) {
     }
 
     void handleCommOpen(Message requestMessage) {
-        import jupyter.wire.message: commCloseMessage;
         import std.traits: hasMember;
+        import jupyter.wire.message: commCloseMessage;
 
-        bool success = false;
-        scope(exit) if (!success) {
-                auto msg = commCloseMessage(requestMessage);
-                sockets.send(sockets.ioPub, msg);
+        void closeComm() {
+            sockets.send(sockets.ioPub, commCloseMessage(requestMessage));
+        }
+
+        static if (!hasMember!(Backend, "commOpen")) {
+            closeComm();
+        } else {
+            try {
+                scope sender = (Message msg){
+                        msg.parentHeader = requestMessage.header;
+                        sockets.send(sockets.ioPub, msg);
+                    };
+
+                if (!backend.commOpen(requestMessage.content["comm_id"].str,
+                                      requestMessage.content["target_name"].str,
+                                      requestMessage.metadata,
+                                      requestMessage.content["data"],
+                                      sender))
+                    closeComm();
+            } catch (Exception e) {
+                closeComm();
+                throw e;
             }
-
-        static if (hasMember!(Backend, "commOpen")) {
-            scope sender = (Message msg){
-                    msg.parentHeader = requestMessage.header;
-                    sockets.send(sockets.ioPub, msg);
-                };
-            success = backend.commOpen(requestMessage.content["comm_id"].str,
-                                       requestMessage.content["target_name"].str,
-                                       requestMessage.metadata["version"].str,
-                                       requestMessage.content["data"],
-                                       sender);
         }
     }
 
