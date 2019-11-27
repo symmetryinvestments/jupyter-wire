@@ -125,7 +125,7 @@ struct MessageHeader {
                      string date;
     @key("version")  string protocolVersion;
 
-    static auto empty() {
+    static empty() {
         import jupyter.wire.kernel : protocolVersion;
         auto header = MessageHeader();
         header.protocolVersion = protocolVersion;
@@ -188,7 +188,7 @@ Message completeMessage(in Message requestMessage, in CompleteResult result) @sa
     return Message(requestMessage, "complete_reply", content);
 }
 
-Message commOpenMessage(in string commId, in string targetName, JSONValue data = JSONValue(), JSONValue metadata = JSONValue()) {
+Message commOpenMessage(in string commId, in string targetName, JSONValue data = JSONValue(), JSONValue metadata = JSONValue()) @safe {
 
     JSONValue content;
     content["comm_id"] = commId;
@@ -198,7 +198,7 @@ Message commOpenMessage(in string commId, in string targetName, JSONValue data =
     return pubMessage(MessageHeader.empty(), "comm_open", content, metadata);
 }
 
-Message commCloseMessage(in Message requestMessage) {
+Message commCloseMessage(in Message requestMessage) @safe {
 
     JSONValue content;
     content["comm_id"] = requestMessage.content["comm_id"];
@@ -206,7 +206,7 @@ Message commCloseMessage(in Message requestMessage) {
     return pubMessage(requestMessage.header, "comm_close", content);
 }
 
-Message commCloseMessage(in string commId, JSONValue data = JSONValue()) {
+Message commCloseMessage(in string commId, JSONValue data = JSONValue()) @safe {
 
     JSONValue content;
     content["comm_id"] = commId;
@@ -215,7 +215,7 @@ Message commCloseMessage(in string commId, JSONValue data = JSONValue()) {
     return pubMessage(MessageHeader.empty(), "comm_close", content);
 }
 
-Message commMessage(in string commId, JSONValue data = JSONValue(), JSONValue metadata = JSONValue()) {
+Message commMessage(in string commId, JSONValue data = JSONValue(), JSONValue metadata = JSONValue()) @safe {
 
     JSONValue content;
     content["comm_id"] = commId;
@@ -224,7 +224,7 @@ Message commMessage(in string commId, JSONValue data = JSONValue(), JSONValue me
     return pubMessage(MessageHeader.empty(), "comm_msg", content, metadata);
 }
 
-Message displayDataMessage(JSONValue data, JSONValue metadata = JSONValue()) {
+Message displayDataMessage(JSONValue data, JSONValue metadata = JSONValue()) @safe {
 
     import std.json : JSONType, parseJSON;
     JSONValue content;
