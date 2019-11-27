@@ -299,7 +299,7 @@ struct Kernel(Backend) if(isBackend!Backend) {
         }
     }
 
-    void handleExecuteRequest(Message requestMessage) @safe {
+    void handleExecuteRequest(Message requestMessage) {
         import jupyter.wire.message: pubMessage;
         import std.json: JSONValue, parseJSON, JSONType;
         import std.conv: text;
@@ -347,7 +347,7 @@ struct Kernel(Backend) if(isBackend!Backend) {
 
         } catch(Exception e) {
 
-            (() @trusted { sockets.stdout(requestMessage.header, text("Error: ", e.msg)); })();
+            sockets.stdout(requestMessage.header, text("Error: ", e.msg));
 
             {
                 JSONValue content;
@@ -355,7 +355,7 @@ struct Kernel(Backend) if(isBackend!Backend) {
                 content["execution_count"] = executionCount;
                 content["ename"] = typeid(e).name;
                 content["evalue"] = e.msg;
-                (() @trusted { content["traceback"] = text(e); })();
+                content["traceback"] = text(e);
 
                 auto replyMessage = Message(requestMessage, "execute_reply", content);
                 sockets.send(sockets.shell, replyMessage);
