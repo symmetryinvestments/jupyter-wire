@@ -205,7 +205,7 @@ struct Kernel(Backend) if(isBackend!Backend) {
                 sockets.send(sockets.ioPub, msg);
             }
 
-        static if (hasMember!(typeof(backend), "commOpen")) {
+        static if (hasMember!(Backend, "commOpen")) {
             scope sender = (Message msg){
                     msg.parentHeader = requestMessage.header;
                     sockets.send(sockets.ioPub, msg);
@@ -221,7 +221,7 @@ struct Kernel(Backend) if(isBackend!Backend) {
     void handleCommMessage(Message requestMessage) {
         import std.traits: hasMember;
 
-        static if (hasMember!(typeof(backend), "commMessage")) {
+        static if (hasMember!(Backend, "commMessage")) {
             scope sender = (Message msg){
                     msg.parentHeader = requestMessage.header;
                     sockets.send(sockets.ioPub, msg);
@@ -235,7 +235,7 @@ struct Kernel(Backend) if(isBackend!Backend) {
     void handleCommClose(Message requestMessage) {
         import std.traits: hasMember;
 
-        static if (hasMember!(typeof(backend), "commClose")) {
+        static if (hasMember!(Backend, "commClose")) {
             scope sender = (Message msg){
                     msg.parentHeader = requestMessage.header;
                     sockets.send(sockets.ioPub, msg);
@@ -284,7 +284,7 @@ struct Kernel(Backend) if(isBackend!Backend) {
         import jupyter.wire.message: completeMessage;
         import std.traits: hasMember;
 
-        static if (hasMember!(typeof(backend), "complete")) {
+        static if (hasMember!(Backend, "complete")) {
             const result = backend.complete(requestMessage.content["code"].str,
                                             requestMessage.content["cursor_pos"].integer);
             auto msg = completeMessage(requestMessage, result);
