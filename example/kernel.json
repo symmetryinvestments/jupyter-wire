@@ -1,8 +1,0 @@
-{
-    "argv": [
-        "example_kernel",
-        "{connection_file}"
-     ],
-    "display_name": "jupyter-wire-example",
-    "language": "jupyter-wire-example"
-}

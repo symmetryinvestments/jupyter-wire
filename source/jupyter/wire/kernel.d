@@ -1,5 +1,8 @@
 module jupyter.wire.kernel;
 
+import jupyter.wire.message: Message;
+
+enum protocolVersion = "5.3.0";
 
 /**
    So users don't have to write their own main
@@ -53,6 +56,8 @@ struct Stdout {
     string value;
 }
 
+alias IoPubMessageSender = void delegate(Message);
+
 ExecutionResult textResult(string result, Stdout stdout = Stdout("")) @safe pure nothrow {
     return ExecutionResult(result, stdout.value, "text/plain");
 }
@@ -65,7 +70,8 @@ ExecutionResult markdownResult(string result, Stdout stdout = Stdout("")) @safe 
 template isBackend(T) {
     enum isBackend = is(typeof({
         LanguageInfo info = T.init.languageInfo;
-        ExecutionResult result = T.init.execute("foo");
+        scope IoPubMessageSender sender = (Message){};
+        ExecutionResult result = T.init.execute("foo", sender);
     }));
 }
 
@@ -83,7 +89,6 @@ auto kernel(Backend, Args...)(Backend backend, auto ref Args args) {
 struct Kernel(Backend) if(isBackend!Backend) {
 
     import jupyter.wire.connection: ConnectionInfo, Sockets;
-    import jupyter.wire.message: Message;
     import zmqd: Socket;
     import std.typecons: Nullable;
 
@@ -98,12 +103,15 @@ struct Kernel(Backend) if(isBackend!Backend) {
     }
 
     this(Backend backend, ConnectionInfo connectionInfo)  {
+        import std.traits : hasMember;
         import jupyter.wire.log: log;
 
         log("Jupyter kernel starting with connection info ", connectionInfo);
 
         this.backend = backend;
         this.sockets = Sockets(connectionInfo);
+        static if (hasMember!(Backend, "initialize"))
+            this.backend.initialize();
     }
 
     void run()  {
@@ -167,11 +175,84 @@ struct Kernel(Backend) if(isBackend!Backend) {
             version(JupyterLogVerbose) log("Told by the FE to execute code");
             handleExecuteRequest(requestMessage);
             return;
+
+        case "comm_open":
+            version(JupyterLogVerbose) log("Told by the FE to open a comm");
+            handleCommOpen(requestMessage);
+            return;
+
+        case "comm_msg":
+            version(JupyterLogVerbose) log("Received a comm msg from the FE");
+            handleCommMessage(requestMessage);
+            return;
+
+        case "comm_close":
+            version(JupyterLogVerbose) log("Told by the FE to close a comm");
+            handleCommClose(requestMessage);
+            return;
         }
 
         assert(0);
     }
 
+    void handleCommOpen(Message requestMessage) {
+        import std.traits: hasMember;
+        import jupyter.wire.message: commCloseMessage;
+
+        void closeComm() {
+            sockets.send(sockets.ioPub, commCloseMessage(requestMessage));
+        }
+
+        static if (!hasMember!(Backend, "commOpen")) {
+            closeComm();
+        } else {
+            try {
+                scope sender = (Message msg){
+                        msg.parentHeader = requestMessage.header;
+                        sockets.send(sockets.ioPub, msg);
+                    };
+
+                if (!backend.commOpen(requestMessage.content["comm_id"].str,
+                                      requestMessage.content["target_name"].str,
+                                      requestMessage.metadata,
+                                      requestMessage.content["data"],
+                                      sender))
+                    closeComm();
+            } catch (Exception e) {
+                closeComm();
+                throw e;
+            }
+        }
+    }
+
+    void handleCommMessage(Message requestMessage) {
+        import std.traits: hasMember;
+
+        static if (hasMember!(Backend, "commMessage")) {
+            scope sender = (Message msg){
+                    msg.parentHeader = requestMessage.header;
+                    sockets.send(sockets.ioPub, msg);
+                };
+            backend.commMessage(requestMessage.content["comm_id"].str,
+                                requestMessage.content["data"],
+                                sender);
+        }
+    }
+
+    void handleCommClose(Message requestMessage) {
+        import std.traits: hasMember;
+
+        static if (hasMember!(Backend, "commClose")) {
+            scope sender = (Message msg){
+                    msg.parentHeader = requestMessage.header;
+                    sockets.send(sockets.ioPub, msg);
+                };
+            backend.commClose(requestMessage.content["comm_id"].str,
+                              requestMessage.content["data"],
+                              sender);
+
+        }
+    }
 
     void handleShutdown(Message requestMessage)  {
         // TODO: restart
@@ -195,7 +276,7 @@ struct Kernel(Backend) if(isBackend!Backend) {
 
         JSONValue kernelInfo;
         kernelInfo["status"] = "ok";
-        kernelInfo["protocol_version"] = "5.3.0";
+        kernelInfo["protocol_version"] = protocolVersion;
         kernelInfo["implementation"] = "foo";
         kernelInfo["implementation_version"] = "0.0.1";
         kernelInfo["language_info"] = languageInfo;
@@ -210,7 +291,7 @@ struct Kernel(Backend) if(isBackend!Backend) {
         import jupyter.wire.message: completeMessage;
         import std.traits: hasMember;
 
-        static if (hasMember!(typeof(backend), "complete")) {
+        static if (hasMember!(Backend, "complete")) {
             const result = backend.complete(requestMessage.content["code"].str,
                                             requestMessage.content["cursor_pos"].integer);
             auto msg = completeMessage(requestMessage, result);
@@ -218,7 +299,7 @@ struct Kernel(Backend) if(isBackend!Backend) {
         }
     }
 
-    void handleExecuteRequest(Message requestMessage)  {
+    void handleExecuteRequest(Message requestMessage) {
         import jupyter.wire.message: pubMessage;
         import std.json: JSONValue, parseJSON, JSONType;
         import std.conv: text;
@@ -237,8 +318,11 @@ struct Kernel(Backend) if(isBackend!Backend) {
         }
 
         try {
-
-            const result = backend.execute(requestMessage.content["code"].str);
+            scope sender = (Message msg){
+                    msg.parentHeader = requestMessage.header;
+                    sockets.send(sockets.ioPub, msg);
+                };
+            const result = backend.execute(requestMessage.content["code"].str, sender);
             sockets.stdout(requestMessage.header, result.stdout);
 
             {
