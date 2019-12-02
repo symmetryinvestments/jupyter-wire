@@ -1,6 +1,6 @@
 {
     "argv": [
-        "example_kernel",
+        "basic_example_kernel",
         "{connection_file}"
      ],
     "display_name": "jupyter-wire-basic-example",

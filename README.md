@@ -39,8 +39,10 @@ auto k = kernel(backend, connectionFileName);
 k.run;
 ```
 
-Please consult the `example` directory for a working (albeit silly) kernel.
+## Examples
 
+- [basic example](./example/basic) shows a minimal kernel that responds to requests from the frontend.
+- [widgets example](./example/widgets) shows how to can communicate with ipywidgets.
 
 ## Windows
 

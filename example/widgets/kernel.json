@@ -1,0 +1,8 @@
+{
+    "argv": [
+        "widgets_example_kernel",
+        "{connection_file}"
+     ],
+    "display_name": "jupyter-wire-widgets-example",
+    "language": "jupyter-wire-widgets-example"
+}
