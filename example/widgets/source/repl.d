@@ -458,14 +458,23 @@ private:
     }
 
     static string[] getFieldsAndFunctions(T)(ref T t) {
-        static if (isAggregateType!T || is(T == class)) {
+        static if (is(T == Void))
+            return [];
+        else static if (isAggregateType!T || is(T == class)) {
             alias Fields = getFields!T;
             alias FunctionSymbols = getFunctions!T;
             alias Functions = staticMap!(getIdentifier, FunctionSymbols);
-            enum string[Fields.length + Functions.length] fieldsAndFunctions = [Fields, Functions];
+            static if (Fields.length == 0 && Functions.length == 0)
+                return [];
+            else static if (Fields.length == 0) {
+                enum string[Functions.length] fieldsAndFunctions = [Functions];
+            } else static if (Functions.length == 0) {
+                enum string[Fields.length] fieldsAndFunctions = [Fields];
+            } else
+                enum string[Fields.length + Functions.length] fieldsAndFunctions = [Fields, Functions];
             return fieldsAndFunctions[];
         } else {
-            return [""];
+            return [];
         }
     }
 
@@ -526,7 +535,7 @@ template getFields(T) {
 
 // Recursively get all types of the fields and return values of each function of each item in Ts
 template discoverTypes(Ts...) {
-    enum isNotVoid(alias T) = !is(T == void);
+    enum isNotVoid(T) = !is(T == void);
     static if (Ts.length == 0) {
         alias discoverTypes = AliasSeq!();
     } else static if (Ts.length == 1) {

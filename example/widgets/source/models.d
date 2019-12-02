@@ -108,12 +108,12 @@ struct Reference(T) {
     alias value this;
 }
 
+alias typeOf(alias T) = typeof(T);
 // To instantiate a Widget!Model we need to also instantiate a Widget!T for each model that is referenced.
 // This template exposed Names and Types which contain the name and type of each Referenced model for a given Model.
 template getReferenceModels(T) {
     enum isReference(string name) = is(typeof(__traits(getMember, T, name)) : Reference!R, R);
     alias getSymbol(string name) = __traits(getMember, T, name);
-    alias typeOf(alias T) = typeof(T);
     alias extractModelType(T) = TemplateArgsOf!(T)[0];
     alias Names = Filter!(isReference, __traits(allMembers, T));
     alias Types = staticMap!(extractModelType, staticMap!(typeOf,staticMap!(getSymbol,  Names)));
