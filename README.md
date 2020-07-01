@@ -5,7 +5,10 @@ jupyter-wire
 
 An implementation of the [Jupyter wire
 protocol](https://jupyter-client.readthedocs.io/en/stable/messaging.html#wire-protocol)
-in [D](https://dlang.org).
+in [D](https://dlang.org). This depends on
+[ZeroMQ](https://zeromq.org/) so the relevant development library
+(zmq.dll, libzmq.so, ...) will have to be installed on the system for
+this to link.
 
 This library was written so that any backend written in or callable by D can be
 a jupyter kernel. A backend must be a D type that satisfies the following
