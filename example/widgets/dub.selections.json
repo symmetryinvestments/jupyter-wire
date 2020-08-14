@@ -1,11 +1,13 @@
 {
 	"fileVersion": 1,
 	"versions": {
-		"asdf": "0.5.2",
+		"asdf": "0.6.2",
 		"jupyter_wire": {"path":"../.."},
+		"mir-algorithm": "3.9.24",
+		"mir-core": "1.1.9",
 		"pegged": "0.4.4",
 		"sumtype": "0.9.2",
-		"unit-threaded": "0.10.4",
+		"unit-threaded": "1.0.4",
 		"zeromq": "4.2.2",
 		"zmqd": "1.1.2"
 	}
