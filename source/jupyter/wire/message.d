@@ -87,6 +87,9 @@ struct Message {
 
         header.date = (cast(DateTime)Clock.currTime).toISOExtString;
         header.msgID = randomUUID.toString;
+	// set username to non-null string otherwise the you can get
+	// failures on jupyterlab
+	header.userName = "username";
     }
 
     private string signature(in string key) @safe {
