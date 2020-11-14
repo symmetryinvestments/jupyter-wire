@@ -1,10 +1,8 @@
 module jupyter.wire.connection;
 
-
 import jupyter.wire.message: Message;
 import zmqd: Socket, Frame;
 import std.typecons: Nullable;
-
 
 ConnectionInfo fileNameToConnectionInfo(in string fileName) @safe {
     import std.file: readText;
@@ -13,16 +11,14 @@ ConnectionInfo fileNameToConnectionInfo(in string fileName) @safe {
 
 
 struct ConnectionInfo {
-
-    import asdf.serialization: jkey = serializationKeys;
-
-    @jkey("signature_scheme") string signatureScheme;
+    import mir.serde: serdeKeys;
+    @serdeKeys("signature_scheme") string signatureScheme;
                               string transport;
-    @jkey("stdin_port")       ushort stdinPort;
-    @jkey("control_port")     ushort controlPort;
-    @jkey("iopub_port")       ushort ioPubPort;
-    @jkey("hb_port")          ushort hbPort;
-    @jkey("shell_port")       ushort shellPort;
+    @serdeKeys("stdin_port")       ushort stdinPort;
+    @serdeKeys("control_port")     ushort controlPort;
+    @serdeKeys("iopub_port")       ushort ioPubPort;
+    @serdeKeys("hb_port")          ushort hbPort;
+    @serdeKeys("shell_port")       ushort shellPort;
                               string key;
                               string ip;
 
