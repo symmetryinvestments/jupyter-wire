@@ -116,14 +116,13 @@ struct Message {
 
 
 struct MessageHeader {
-    import asdf: key = serializationKeys;
-
-    @key("msg_id")   string msgID;
-    @key("msg_type") string msgType;
-    @key("username") string userName;
+    import mir.serde: serdeKeys;
+    @serdeKeys("msg_id")   string msgID;
+    @serdeKeys("msg_type") string msgType;
+    @serdeKeys("username") string userName;
                      string session;
                      string date;
-    @key("version")  string protocolVersion;
+    @serdeKeys("version")  string protocolVersion;
 
     static empty() {
         import jupyter.wire.kernel : protocolVersion;
