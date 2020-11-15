@@ -87,6 +87,11 @@ struct Message {
 
         header.date = (cast(DateTime)Clock.currTime).toISOExtString;
         header.msgID = randomUUID.toString;
+        // set username and session to non-null string
+        // otherwise the you can get failures on jupyterlab
+        // when zmq returns None other than a string
+        header.userName = "";
+        header.session = "";
     }
 
     private string signature(in string key) @safe {

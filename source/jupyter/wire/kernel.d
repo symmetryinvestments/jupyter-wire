@@ -134,6 +134,17 @@ struct Kernel(Backend) if(isBackend!Backend) {
             log("Received message from the front-end.");
         }
 
+        // Set username and session to empty string
+        // Keeping the the fields as null will forward
+        // None to the FE
+        if (requestMessage.get.header.userName is null) {
+            requestMessage.get.header.userName = "";
+        }
+
+        if (requestMessage.get.header.session is null) {
+            requestMessage.get.header.session = "";
+        }
+
         handleRequestMessage(requestMessage.get);
     }
 
