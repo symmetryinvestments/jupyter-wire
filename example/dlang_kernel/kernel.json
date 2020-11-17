@@ -1,0 +1,8 @@
+{
+    "argv": [
+        "dlang_kernel",
+        "{connection_file}"
+     ],
+    "display_name": "D",
+    "language": "D"
+}

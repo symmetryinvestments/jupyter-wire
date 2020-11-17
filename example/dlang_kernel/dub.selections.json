@@ -1,0 +1,17 @@
+{
+	"fileVersion": 1,
+	"versions": {
+		"asdf": "0.6.2",
+		"colorize": "1.0.5",
+		"drepl": "0.2.1",
+		"jupyter_wire": {"path":"../.."},
+		"libdparse": "0.8.8",
+		"linenoise": "1.1.0+1.0.0",
+		"mir-algorithm": "3.9.24",
+		"mir-core": "1.1.9",
+		"stdx-allocator": "2.77.5",
+		"unit-threaded": "1.0.4",
+		"zeromq": "4.2.2",
+		"zmqd": "1.1.2"
+	}
+}
