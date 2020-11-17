@@ -41,6 +41,12 @@ struct Message {
             parentHeader = strings[delimiterIndex + 3].deserialize!MessageHeader;
         }();
 
+        if (header.userName is null)
+            header.userName = "";
+
+        if (parentHeader.userName is null)
+            parentHeader.userName = "";
+
         metadata = parseJSON(strings[delimiterIndex + 4]);
         content = parseJSON(strings[delimiterIndex + 5]);
         extraRawData = strings[delimiterIndex + 6 .. $].dup;
@@ -119,7 +125,7 @@ struct MessageHeader {
     import mir.serde: serdeKeys;
     @serdeKeys("msg_id")   string msgID;
     @serdeKeys("msg_type") string msgType;
-    @serdeKeys("username") string userName;
+    @serdeKeys("username") string userName = "";
                      string session;
                      string date;
     @serdeKeys("version")  string protocolVersion;
