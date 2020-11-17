@@ -4,6 +4,7 @@ import drepl;
 
 mixin Main!DLangBackend;
 
+typeof(interpreter(dmdEngine())) inpr_in;
 struct DLangBackend {
     enum languageInfo = LanguageInfo("D", "0.0.1", ".d");
     int value;
@@ -11,7 +12,7 @@ struct DLangBackend {
     ExecutionResult execute(in string code, scope IoPubMessageSender sender) {
         import std.conv: text;
 	if (inpr is null) {
-	   auto inpr_in = interpreter(dmdEngine()); 
+	   inpr_in = interpreter(dmdEngine()); 
 	   inpr = &inpr_in;
 	}
 	auto res = (*inpr).interpret(code);
