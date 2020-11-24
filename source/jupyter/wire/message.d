@@ -47,6 +47,12 @@ struct Message {
         if (parentHeader.userName is null)
             parentHeader.userName = "";
 
+        if (header.session is null)
+            header.session = "";
+
+        if (parentHeader.session is null)
+            parentHeader.session = "";
+
         metadata = parseJSON(strings[delimiterIndex + 4]);
         content = parseJSON(strings[delimiterIndex + 5]);
         extraRawData = strings[delimiterIndex + 6 .. $].dup;
@@ -126,7 +132,7 @@ struct MessageHeader {
     @serdeKeys("msg_id")   string msgID;
     @serdeKeys("msg_type") string msgType;
     @serdeKeys("username") string userName = "";
-                     string session;
+                     string session = "";
                      string date;
     @serdeKeys("version")  string protocolVersion;
 
