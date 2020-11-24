@@ -1,6 +1,7 @@
 import jupyter.wire.kernel;
 import jupyter.wire.message : CompleteResult;
-
+import jupyter.wire.magic: magic_runner;
+import std.stdio;
 
 mixin Main!ExampleBackend;
 
@@ -10,6 +11,17 @@ class ExampleException: Exception {
     mixin basicExceptionCtors;
 }
 
+static this() {
+  magic_runner.register_line_magic("echo",
+				   function ExecutionResult(string x) {
+				     return textResult(x);
+				       });
+  magic_runner.register_cell_magic("echo",
+				   function ExecutionResult(string x,
+							    string y) {
+				     return textResult(y);
+				       });
+}
 
 struct ExampleBackend {
 
@@ -19,6 +31,10 @@ struct ExampleBackend {
     ExecutionResult execute(in string code, scope IoPubMessageSender sender) @safe {
         import std.conv: text;
 
+	auto c = magic_runner.run(code);
+	if (c[0] == 1) {
+	  return c[1];
+	}
         switch(code) {
         default:
             throw new ExampleException("Unkown command '" ~ code ~ "'");
