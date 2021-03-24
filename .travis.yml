@@ -8,12 +8,10 @@ env:
 matrix:
   include:
     - d: dmd-nightly
-    - d: dmd-2.093.0
-    - d: ldc-1.22.0
+    - d: dmd-2.096.0
+    - d: ldc-1.25.1
   allow_failures:
     - d: dmd-nightly
-    - d: dmd
-    - d: ldc
 
 addons:
   apt:
