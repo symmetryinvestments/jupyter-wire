@@ -21,3 +21,8 @@ configuration "stdout" {
 configuration "stdout-verbose" {
     versions "JupyterLogStdout" "JupyterLogVerbose"
 }
+
+
+configuration "debug-file-logger" {
+    versions "JupyterLogFile" "JupyterLogVerbose"
+}

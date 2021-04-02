@@ -11,7 +11,19 @@ version(Windows) {
    Prints to the console when unit testing and on Linux,
    otherwise uses the system logger on Windows.
  */
-void log(A...)(auto ref A args) @trusted {
+void log(
+    string file = __FILE__,
+    size_t line = __LINE__,
+    string funcName = __FUNCTION__,
+    string prettyFuncName = __PRETTY_FUNCTION__,
+    string moduleName = __MODULE__,
+     A...
+    )
+    (
+        auto ref A args,
+    )
+    @trusted
+{
     try {
         version(unittest) {
             version(Have_unit_threaded) {
@@ -23,7 +35,20 @@ void log(A...)(auto ref A args) @trusted {
             }
         } else version(JupyterLogStdout) {
             import std.experimental.logger: trace;
-            trace(args);
+            trace!(line, file, funcName, prettyFuncName, moduleName)(args);
+
+        } else version(JupyterLogFile) {
+
+            import std.experimental.logger.filelogger: FileLogger;
+
+            static FileLogger fileLogger;
+
+            if(fileLogger is null) {
+                fileLogger = new FileLogger("/tmp/jupyter.txt");
+            }
+
+            fileLogger.log(args);
+
         } else version(Windows) {
             import std.conv: text, to;
             scope txt = text(args);
@@ -31,7 +56,7 @@ void log(A...)(auto ref A args) @trusted {
             OutputDebugStringW(wtxt.ptr);
         } else {
             import std.experimental.logger: trace;
-            trace(args);
+            trace!(line, file, funcName, prettyFuncName, moduleName)(args);
         }
     } catch(Exception e) {
         import core.stdc.stdio: printf;

@@ -14,7 +14,7 @@ mixin template Main(Backend) {
             run!Backend(args);
             return 0;
         } catch(Exception e) {
-            log("Error: ", e.msg);
+            log("Error: ", e.toString);
             return 1;
         } catch(Error e) {
             log("FATAL ERROR: ", e.toString);

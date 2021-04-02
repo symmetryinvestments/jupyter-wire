@@ -1,8 +1,10 @@
 module jupyter.wire.connection;
 
+
 import jupyter.wire.message: Message;
 import zmqd: Socket, Frame;
 import std.typecons: Nullable;
+
 
 ConnectionInfo fileNameToConnectionInfo(in string fileName) @safe {
     import std.file: readText;
@@ -96,6 +98,11 @@ struct Sockets {
 
     private void stopHeartbeatLoop() @trusted {
         import std.concurrency: send, receiveOnly;
+
+        // for some reason the destructor is getting called with dmd
+        // 2.096.0 when creating the kernel
+        if(heartbeatTid == heartbeatTid.init) return;
+
         heartbeatTid.send(Stop());
         receiveOnly!Done;
         heartbeatTid = Tid.init;
