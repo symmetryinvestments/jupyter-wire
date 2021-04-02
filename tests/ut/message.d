@@ -5,8 +5,24 @@ import jupyter.wire.message;
 
 @("messageheader.non-null.username")
 unittest {
-  MessageHeader.empty.userName.shouldNotBeNull;
+    MessageHeader.empty.userName.shouldNotBeNull;
 }
+
+
+@("messageheader.empty")
+unittest {
+  auto message = Message(
+      [
+          "<IDS|MSG>",
+          "f3ceaa87a37567bf6e6431c75460596f2e8bd609960ccffc1224cc1105debe09",
+          `{"msg_id":"7e65fba6-d785-4a0c-95ee-6be99ba8ed17","msg_type":"dummy-type","session":null,"date":"2020-11-15T15:06:37","version":null}`,
+          `{}`,
+          "{}",
+          "{}",
+      ]
+  );
+}
+
 
 @("non-null.username")
 unittest {

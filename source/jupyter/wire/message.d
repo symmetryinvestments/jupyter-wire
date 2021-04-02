@@ -129,12 +129,16 @@ struct Message {
 
 struct MessageHeader {
     import mir.serde: serdeKeys, serdeOptional;
-    @serdeKeys("msg_id")   string msgID;
+
+    @serdeOptional
+    @serdeKeys("msg_id")   string msgID = "";
+    @serdeOptional
     @serdeKeys("msg_type") string msgType;
     @serdeOptional
     @serdeKeys("username") string userName = "";
-                           string session = "";
-                           string date;
+    @serdeOptional         string session = "";
+    @serdeOptional         string date;
+    @serdeOptional
     @serdeKeys("version")  string protocolVersion;
 
     static empty() {
