@@ -36,6 +36,19 @@ void log(
         } else version(JupyterLogStdout) {
             import std.experimental.logger: trace;
             trace!(line, file, funcName, prettyFuncName, moduleName)(args);
+
+        } else version(JupyterLogFile) {
+
+            import std.experimental.logger.filelogger: FileLogger;
+
+            static FileLogger fileLogger;
+
+            if(fileLogger is null) {
+                fileLogger = new FileLogger("/tmp/jupyter.txt");
+            }
+
+            fileLogger.log(args);
+
         } else version(Windows) {
             import std.conv: text, to;
             scope txt = text(args);
