@@ -1,5 +1,6 @@
 module jupyter.wire.message;
 
+
 import std.json: JSONValue;
 
 /**
@@ -41,18 +42,6 @@ struct Message {
             parentHeader = strings[delimiterIndex + 3].deserialize!MessageHeader;
         }();
 
-        if (header.userName is null)
-            header.userName = "";
-
-        if (parentHeader.userName is null)
-            parentHeader.userName = "";
-
-        if (header.session is null)
-            header.session = "";
-
-        if (parentHeader.session is null)
-            parentHeader.session = "";
-
         metadata = parseJSON(strings[delimiterIndex + 4]);
         content = parseJSON(strings[delimiterIndex + 5]);
         extraRawData = strings[delimiterIndex + 6 .. $].dup;
@@ -78,7 +67,7 @@ struct Message {
     /**
        Convert to a format suitable for sending over ZMQ
      */
-    string[] toStrings(in string key) @safe {
+    string[] toStrings(in string key) @safe const {
         return
             identities.dup ~
             delimiter ~
@@ -101,7 +90,7 @@ struct Message {
         header.msgID = randomUUID.toString;
     }
 
-    private string signature(in string key) @safe {
+    private string signature(in string key) @safe const {
         import std.digest.hmac: hmac;
         import std.digest.sha: SHA256;
         import std.string: representation;
@@ -131,12 +120,12 @@ struct MessageHeader {
     import mir.serde: serdeKeys, serdeOptional;
 
     @serdeOptional
-    @serdeKeys("msg_id")   string msgID = "";
+    @serdeKeys("msg_id")   string msgID;
     @serdeOptional
     @serdeKeys("msg_type") string msgType;
     @serdeOptional
-    @serdeKeys("username") string userName = "";
-    @serdeOptional         string session = "";
+    @serdeKeys("username") string userName;
+    @serdeOptional         string session;
     @serdeOptional         string date;
     @serdeOptional
     @serdeKeys("version")  string protocolVersion;
@@ -152,9 +141,12 @@ struct MessageHeader {
 // can't be made a member function because `serializetoJson(this)` doesn't compile
 private string toJsonString(MessageHeader header) @safe pure {
     import asdf: serializeToJson;
-    return header.msgID is null ? "{}" : () @trusted { return serializeToJson(header); }();
+    import std.string: replace;
+    const prelim = header.msgID is null ? "{}" : () @trusted { return serializeToJson(header); }();
+    return prelim.replace("null", `""`);
 }
 
+// can't be pure due to JSONValue.toString
 private string toJsonString(in JSONValue json) @safe {
     import std.json: JSONType;
     return json.type == JSONType.null_ ? `{}` : json.toString;
